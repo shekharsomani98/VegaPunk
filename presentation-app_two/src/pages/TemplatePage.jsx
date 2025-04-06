@@ -57,7 +57,11 @@ const TemplatePage = () => {
       navigate('/generating', { 
         state: {
           ...location.state,
-          templateName: selectedTemplate === 'custom' ? 'template.pptx' : `${selectedTemplate}.pptx`
+          templateName: selectedTemplate === 'custom' 
+            ? 'template.pptx' 
+            : selectedTemplate === 'citation'
+              ? 'Citation.pptx'
+              : `${selectedTemplate}.pptx`
         } 
       });
       

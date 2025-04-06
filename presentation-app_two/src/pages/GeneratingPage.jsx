@@ -37,6 +37,14 @@ const GeneratingPage = () => {
       // Use extended 10-minute timeout for execution-agent-parsing and generate-presentation
       const timeout = extendedTimeout ? 600000 : 120000; // 10 mins vs 2 mins
       
+      // Log FormData contents for debugging
+      if (formData instanceof FormData) {
+        console.log(`📤 ${endpoint} request FormData contents:`);
+        for (let [key, value] of formData.entries()) {
+          console.log(`   ${key}: ${value}`);
+        }
+      }
+      
       const response = await axios.post(`http://localhost:8000/${endpoint}`, formData, {
         timeout: timeout
       });
@@ -141,67 +149,108 @@ const GeneratingPage = () => {
       
       // Fix - use the actual selected template
       const safeTemplateName = templateName;
+      console.log('🔍 Using template:', safeTemplateName);
 
-      // 1. Extract template layout (standard timeout)
-      setStatus('Processing template...');
+      // 1. First analyze the document to generate prerequisites
+      setStatus('Analyzing prerequisites...');
       setProgress(10);
+      const prereqFormData = new FormData();
+      prereqFormData.append("url", documentUrl);
+      prereqFormData.append("student_level", location.state.studentLevel);
+      await callAPI('analyze/url', prereqFormData, 'Prerequisites analysis failed');
+      
+      // 2. Extract template layout (standard timeout)
+      setStatus('Processing template...');
+      setProgress(20);
       const templateFormData = new FormData();
       templateFormData.append("template_name", safeTemplateName);
       await callAPI('extract-template-layout', templateFormData, 'Template layout extraction failed');
       
-      // 2. Convert placeholders (standard timeout)
-      setProgress(20);
+      // 3. Convert placeholders (standard timeout)
+      setProgress(30);
       const placeholdersFormData = new FormData();
       placeholdersFormData.append("layout_extracted_path", "data/metadata/layout_details.json");
       await callAPI('convert-placeholders', placeholdersFormData, 'Placeholder conversion failed');
       
-      // 3. OCR on URL for figures (standard timeout)
+      // 4. OCR on URL for figures (standard timeout)
       setStatus('Extracting figures from paper...');
-      setProgress(30);
+      setProgress(40);
       const ocrFormData = new FormData();
       ocrFormData.append("document_url", documentUrl);
       
       const ocrResult = await callAPI('ocr-figure-url', ocrFormData, 'OCR extraction failed');
       
-      // 4. Save figures from OCR (standard timeout)
-      setProgress(40);
+      // 5. Save figures from OCR (standard timeout)
+      setProgress(50);
       const figuresResult = await callAPI('save-figures', ocrResult.ocr_response, 'Figure saving failed');
       
-      // 5. Generate slide data (EXTENDED 10-min timeout)
+      // 6. Generate slide data (EXTENDED 10-min timeout)
       setStatus('Creating slide content...');
-      setProgress(50);
+      setProgress(60);
       const slideFormData = new FormData();
       slideFormData.append("student_level", studentLevelText);
       slideFormData.append("document_url", documentUrl);
       slideFormData.append("num_slides", numSlides);
       
+      // Add selected topics if available
+      if (location.state.selectedPrerequisites) {
+        // Get keys of selected topics (only ones that are true)
+        const selectedTopics = Object.keys(location.state.selectedPrerequisites).filter(
+          key => location.state.selectedPrerequisites[key] === true
+        );
+        
+        console.log('Selected topics:', selectedTopics);
+        console.log('Full selectedPrerequisites:', location.state.selectedPrerequisites);
+        
+        // Append each selected topic as an array item
+        if (selectedTopics.length > 0) {
+          selectedTopics.forEach(topic => {
+            slideFormData.append("selected_topics", topic);
+          });
+          console.log('Added selected topics to FormData');
+        } else {
+          console.log('No topics were selected (empty array)');
+        }
+      } else {
+        console.log('No selectedPrerequisites found in location.state');
+      }
+      
       await callAPI('slide-data-gen', slideFormData, 'Slide data generation failed', true);
       
-      // 6. Process slides data (standard timeout)
+      // 7. Process slides data (standard timeout)
       setStatus('Processing slides...');
-      setProgress(60);
+      setProgress(70);
       await callAPI('process-slides-data', new FormData(), 'Slide processing failed');
       
-      // 7. Execute agent parsing (EXTENDED 10-min timeout)
+      // 8. Execute agent parsing (EXTENDED 10-min timeout)
       setStatus('Designing your presentation...');
-      setProgress(70);
+      setProgress(80);
       const agentFormData = new FormData();
       agentFormData.append("template_name", safeTemplateName);
-      await callAPI(
-        'execution-agent-parsing', 
-        agentFormData, 
-        'Layout parsing failed', 
-        true // Use extended timeout
-      );
+      console.log('🔍 Execution agent using template:', safeTemplateName);
       
-      // 8. Generate the final presentation (EXTENDED 10-min timeout)
+      try {
+        await callAPI(
+          'execution-agent-parsing', 
+          agentFormData, 
+          'Layout parsing failed', 
+          true // Use extended timeout
+        );
+      } catch (error) {
+        console.error('❌ Execution agent parsing failed:', error);
+        console.warn('Continuing despite layout parsing failure - will use fallback method');
+        // Don't rethrow, continue with presentation generation
+      }
+      
+      // 9. Generate the final presentation (EXTENDED 10-min timeout)
       setStatus('Building your presentation...');
-      setProgress(85);
+      setProgress(90);
       const pptFormData = new FormData();
       pptFormData.append("template_name", safeTemplateName);
       pptFormData.append("execution_json_filename", "execution_agent.json");
       pptFormData.append("output_ppt_filename", "generated_presentation.pptx");
       pptFormData.append("processed_layout_filename", "processed_layout.json");
+      console.log('🔍 Generating presentation with template:', safeTemplateName);
       
       await callAPI(
         'generate-presentation', 
@@ -274,7 +323,7 @@ const GeneratingPage = () => {
           </div>
           <h2 className="text-xl font-semibold mb-2">Generation Error</h2>
           <p className="text-gray-700 mb-6">
-            There was an issue with the template "{location.state.templateName}". This template might not be compatible.
+            {error}
           </p>
           <div className="space-y-3">
             <button

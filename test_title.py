@@ -1,41 +1,6 @@
 # import requests
 # import json
 
-# # Base URL of your FastAPI application
-# BASE_URL = "http://localhost:8000"
-
-# def test_analyze_url():
-#     url = f"{BASE_URL}/analyze/url"
-#     data = {
-#         "url": "https://arxiv.org/pdf/2003.08934.pdf",
-#         "student_level": "2"  # 2 for Masters student
-#     }
-#     response = requests.post(url, data=data)
-    
-#     print("URL Analysis Response:")
-#     # print(json.dumps(response.json(), indent=2))
-#     print(f"Status Code: {response.status_code}")
-
-    
-# def test_analyze_pdf():
-#     url = f"{BASE_URL}/analyze/pdf"
-#     pdf_file_path = "path/to/your/paper.pdf"  # Replace with the path to your PDF file
-    
-#     with open(pdf_file_path, "rb") as pdf_file:
-#         files = {"file": ("paper.pdf", pdf_file, "application/pdf")}
-#         data = {"student_level": "3"}  # 3 for Undergraduate student
-        
-#         response = requests.post(url, files=files, data=data)
-    
-#     print("\nPDF Analysis Response:")
-#     print(json.dumps(response.json(), indent=2))
-#     print(f"Status Code: {response.status_code}")
-
-# if __name__ == "__main__":
-#     test_analyze_url()
-#     # test_analyze_pdf()
-
-
 import requests
 import json
 import os

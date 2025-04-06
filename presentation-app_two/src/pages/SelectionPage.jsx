@@ -38,18 +38,26 @@ const SelectionPage = () => {
 
   const handleNext = async () => {
     try {
+      // Create an object with only selected topics marked as true
+      const selected = {};
+      Object.keys(selectedTiles).forEach(key => {
+        selected[key] = true;
+      });
+      
+      console.log("Selected topics before navigation:", selected);
+      
       // Save selected prerequisites to state
       navigate('/settings', {
         state: {
           ...location.state,
           selectedPrerequisites: Object.keys(selectedTiles).length > 0 
-            ? selectedTiles 
-            : prerequisites
+            ? selected  // Use our cleaner object with explicit boolean values
+            : prerequisites  // Default to all if none selected
         }
       });
     } catch (err) {
       // Error handling
-      console.log(err)
+      console.log(err);
     }
   };
 

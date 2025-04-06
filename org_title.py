@@ -704,11 +704,34 @@ async def process_slides_data():
     
 @app.post("/execution-agent-parsing")
 async def execution_agent_parsing(
-    template_name: str = Form("template.pptx"),
+    template_name: str = Form(...),
     settings: Settings = Depends(get_settings)
 ):
     try:
-        template_dir = Path("data/upload") / template_name
+        print(f"📌 Execution Agent using template: {template_name}")
+        # Check for template with case-insensitive matching
+        upload_dir = Path("data/upload")
+        template_path = None
+        
+        # Try exact match first
+        exact_match = upload_dir / template_name
+        if exact_match.exists():
+            template_path = exact_match
+        else:
+            # Try case-insensitive matching
+            for file in upload_dir.glob("*.pptx"):
+                if file.name.lower() == template_name.lower():
+                    template_path = file
+                    print(f"📌 Found template with case-insensitive match: {file.name}")
+                    break
+        
+        if not template_path:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Template file {template_name} not found. Available templates: {', '.join([f.name for f in upload_dir.glob('*.pptx')])}"
+            )
+            
+        template_dir = template_path
         json_dir = Path("data/metadata")
         slides_data_path = json_dir / "updated_slides_data.json"
         layout_data_path = json_dir / "processed_layout.json"
@@ -773,91 +796,225 @@ import traceback
     
 @app.post("/generate-presentation")
 async def generate_presentation_from_execution_json(
-    template_name: str = Form("template.pptx"),
+    template_name: str = Form(...),
     execution_json_filename: str = Form("execution_agent.json"),
     output_ppt_filename: str = Form("modified_presentation.pptx"),
     processed_layout_filename: str = Form("processed_layout.json")
 ):
-    print("input from the user:",template_name)
+    print(f"📌 Generating presentation with template: {template_name}")
     try:
+        # Prepare directories
         output_dir = Path("data/output")
         output_dir.mkdir(parents=True, exist_ok=True)
-        template_dir = Path("data/upload") / template_name
+        
+        # Find the template file with case-insensitive matching
+        upload_dir = Path("data/upload")
+        template_path = None
+        
+        # Try exact match first
+        exact_match = upload_dir / template_name
+        if exact_match.exists():
+            template_path = exact_match
+            print(f"📌 Using exact template match: {template_name}")
+        else:
+            # Try case-insensitive matching
+            for file in upload_dir.glob("*.pptx"):
+                if file.name.lower() == template_name.lower():
+                    template_path = file
+                    print(f"📌 Found template with case-insensitive match: {file.name}")
+                    break
+        
+        if not template_path:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Template file {template_name} not found. Available templates: {', '.join([f.name for f in upload_dir.glob('*.pptx')])}"
+            )
+            
+        # Set up paths
+        template_dir = template_path
         json_dir = Path("data/metadata")
-        execution_agent_json = json_dir / "execution_agent.json"
-        processed_layout_json = json_dir / "processed_layout.json"
+        execution_agent_json = json_dir / execution_json_filename
         output_ppt_path = Path("data/output") / output_ppt_filename
 
+        # Load the presentation and JSON data
         prs = Presentation(template_dir)
-        print("presentation is loaded: ",prs)
+        print(f"📄 Presentation loaded from {template_dir}")
+        
+        # Get the initial count of slides for later deletion
+        initial_slide_count = len(prs.slides)
+        print(f"📊 Template has {initial_slide_count} initial slides")
+        
+        # Load the JSON data
         json_data = load_json(execution_agent_json)
+        print(f"📊 Loaded execution agent JSON with {len(json_data.get('slides', []))} slides")
 
-        print("last step: ",json_data)
-        print("\n📥 Received /generate-presentation request")
-        print("template_name:", template_dir)
-        print("execution_json_filename:", execution_agent_json)
-        print("output_ppt_filename:", output_ppt_path)
-        print("processed_layout_filename:", processed_layout_json)
-        print("-" * 50)
-
+        # Define layout finder function
         def get_layout_by_name(prs_obj, layout_name):
             for layout in prs_obj.slide_layouts:
                 if layout.name == layout_name:
                     return layout
             return None
 
-        def find_placeholder_by_name(slide, name, index):
-            for shape in slide.shapes:
-                if shape.placeholder_format.idx == int(index):
-                    return shape
-                elif shape.has_table:
-                    pass
-            return None
+        # For debugging
+        layout_names = [layout.name for layout in prs.slide_layouts]
+        print(f"📋 Available layouts: {layout_names}")
 
-        for slide_data in json_data.get("slides", []):
+        # Create slides from JSON data
+        print("🔄 Creating slides from JSON data...")
+        for slide_idx, slide_data in enumerate(json_data.get("slides", []), 1):
             layout_name = slide_data.get("slide_name")
             layout = get_layout_by_name(prs, layout_name)
-
-            if layout:
-                slide = prs.slides.add_slide(layout)
-                for placeholder_name, content in slide_data["placeholders"].items():
-                    name = placeholder_name.split("_")[0]
-                    index = placeholder_name.split("_")[-1]
-                    placeholder = find_placeholder_by_name(slide, name, index)
-
-                    if placeholder and placeholder.has_text_frame:
-                        placeholder.text_frame.text = content
-
-                    if placeholder_name.startswith("Picture"):
-                        for shape in slide.shapes:
-                            if shape.placeholder_format.idx == int(index):
+            
+            if not layout:
+                print(f"⚠️ Layout '{layout_name}' not found in the template. Skipping slide {slide_idx}.")
+                continue
+                
+            # Add the slide
+            slide = prs.slides.add_slide(layout)
+            print(f"✅ Added slide {slide_idx} with layout '{layout_name}'")
+            
+            # Fill placeholders
+            for placeholder_name, content in slide_data.get("placeholders", {}).items():
+                # Parse the placeholder name to get components
+                name_parts = placeholder_name.split("_")
+                name = name_parts[0] if name_parts else placeholder_name
+                index = name_parts[-1] if len(name_parts) > 1 else "0"
+                
+                try:
+                    # Try to find the placeholder by index
+                    placeholder_found = False
+                    idx = int(index)
+                    for shape in slide.shapes:
+                        if hasattr(shape, 'placeholder_format') and shape.placeholder_format.idx == idx:
+                            placeholder_found = True
+                            
+                            # Handle different content types
+                            if shape.has_text_frame:
+                                # Convert content to string if it's a list
+                                if isinstance(content, str):
+                                    # Check if this is a formula path
+                                    if ("formulas" in content or "Formula" in content) and content.endswith(".png"):
+                                        try:
+                                            # This is a formula image, insert it
+                                            formula_path = content if content.startswith("data/") else f"data/formulas/{content}"
+                                            print(f"🔤 Inserting formula image at {formula_path}")
+                                            shape.insert_picture(formula_path)
+                                        except Exception as e:
+                                            print(f"⚠️ Error inserting formula image: {e}")
+                                            shape.text_frame.text = ""  # Don't show the path
+                                    else:
+                                        shape.text_frame.text = content
+                                elif isinstance(content, list):
+                                    shape.text_frame.text = "\n".join([str(item) for item in content])
+                                else:
+                                    shape.text_frame.text = str(content)
+                                    
+                            # Handle picture placeholders
+                            if name.startswith("Picture") or "Picture" in shape.name:
                                 try:
-                                    shape.insert_picture(content)
-                                except Exception:
-                                    pass
-            else:
-                print(f"⚠️ Layout '{layout_name}' not found in the template.")
+                                    # Determine the path
+                                    pic_path = content
+                                    if isinstance(content, list) and content:
+                                        pic_path = content[0]
+                                        
+                                    # Make sure it has the full path
+                                    if isinstance(pic_path, str):
+                                        if not pic_path.startswith("data/"):
+                                            if "Formula" in pic_path:
+                                                pic_path = f"data/formulas/{pic_path}"
+                                            elif "figure" in pic_path.lower() or "Figure" in pic_path:
+                                                pic_path = f"data/figures/{pic_path}"
+                                                
+                                        print(f"🖼️ Inserting picture: {pic_path}")
+                                        shape.insert_picture(pic_path)
+                                except Exception as e:
+                                    print(f"⚠️ Error inserting picture: {e}")
+                            
+                    if not placeholder_found:
+                        print(f"⚠️ Placeholder with index {idx} not found in slide {slide_idx}")
+                        
+                except ValueError:
+                    # If the index isn't a number, try to find by name
+                    placeholder_found = False
+                    for shape in slide.shapes:
+                        if hasattr(shape, 'name') and name in shape.name:
+                            placeholder_found = True
+                            if shape.has_text_frame:
+                                if isinstance(content, str):
+                                    # Check if this is a formula path
+                                    if ("formulas" in content or "Formula" in content) and content.endswith(".png"):
+                                        try:
+                                            # This is a formula image, insert it
+                                            formula_path = content if content.startswith("data/") else f"data/formulas/{content}"
+                                            print(f"🔤 Inserting formula image at {formula_path}")
+                                            shape.insert_picture(formula_path)
+                                        except Exception as e:
+                                            print(f"⚠️ Error inserting formula image: {e}")
+                                            shape.text_frame.text = ""  # Don't show the path
+                                    else:
+                                        shape.text_frame.text = content
+                                elif isinstance(content, list):
+                                    shape.text_frame.text = "\n".join([str(item) for item in content])
+                                else:
+                                    shape.text_frame.text = str(content)
+                            
+                            # Handle picture placeholders by name
+                            if name.startswith("Picture") or "Picture" in shape.name:
+                                try:
+                                    # Determine the path
+                                    pic_path = content
+                                    if isinstance(content, list) and content:
+                                        pic_path = content[0]
+                                        
+                                    # Make sure it has the full path
+                                    if isinstance(pic_path, str):
+                                        if not pic_path.startswith("data/"):
+                                            if "Formula" in pic_path:
+                                                pic_path = f"data/formulas/{pic_path}"
+                                            elif "figure" in pic_path.lower() or "Figure" in pic_path:
+                                                pic_path = f"data/figures/{pic_path}"
+                                                
+                                        print(f"🖼️ Inserting picture by name: {pic_path}")
+                                        shape.insert_picture(pic_path)
+                                except Exception as e:
+                                    print(f"⚠️ Error inserting picture by name: {e}")
+                    
+                    if not placeholder_found:
+                        print(f"⚠️ Placeholder with name {name} not found in slide {slide_idx}")
 
+        # Save the presentation with all slides included
         temp_ppt_path = "temp.pptx"
         prs.save(temp_ppt_path)
+        print(f"💾 Saved temporary presentation to {temp_ppt_path}")
 
+        print(f"🛠️ Now handling slide deletion following the original code's approach")
+        # Follow the exact approach from the notebook code:
+        # Load the presentation
         prs = Presentation(temp_ppt_path)
+        
+        # Get the total number of slides
         total_slides = len(prs.slides)
+        print(f"📊 Total slides in presentation: {total_slides}")
+        
+        # Use exactly 13 as in the original code, or fewer if there are fewer slides
         slides_to_remove = min(13, total_slides)
-
+        print(f"🧹 Removing {slides_to_remove} slides from the beginning")
+        
+        # Remove the slides from the beginning
         for _ in range(slides_to_remove):
             rId = prs.slides._sldIdLst[0].rId
             prs.part.drop_rel(rId)
             del prs.slides._sldIdLst[0]
 
+        # Save the final presentation
         prs.save(str(output_ppt_path).replace("\\","/"))
+        print(f"✅ Final presentation saved to {output_ppt_path}")
+        
+        # Clean up temp file
         os.remove(temp_ppt_path)
 
         return {"message": "Presentation generated successfully", "path": str(output_ppt_path)}
     
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=f"Error generating presentation: {str(e)}")
-
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error generating presentation: {str(e)}")
