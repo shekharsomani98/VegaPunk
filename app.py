@@ -26,7 +26,7 @@ import traceback
 import time
 import asyncio
 from config import config
-from utils import load_json, save_json
+from utils import load_json, save_json, extract_json
 
 # Configuration settings
 class Settings(BaseSettings):
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     MODEL_NAME: str = "mistral-small-latest"
     EXECUTION_AGENT_ID: Optional[str] = None
     MODEL_NAME_OCR: str = "mistral-ocr-latest"
-    
+    ENHANCE_AGENT_ID: Optional[str] = None
     class Config:
         env_file = ".env"
         extra = 'ignore'
@@ -150,17 +150,18 @@ def render_latex_to_image(formula, name="latex"):
         fig.patch.set_visible(False)
         image_path = Path("data/formulas") / f"{name.replace(' ', '_')}.png"
         ax.axis('off')
-        ax.text(0.5, 0.5, f"{formula}", fontsize=30, ha='center', va='center')
+        ax.text(0.5, 0.5, f"${formula}$", fontsize=30, ha='center', va='center')
         image_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(image_path, bbox_inches='tight', transparent=True, dpi=150)
         plt.close()
         
         render_time = time.time() - start_time
-        print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s")
+        print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s with $ escape")
         
         # Cache the result
         formula_cache[cache_key] = str(image_path)
         return str(image_path)
+        
     except:
         try:
             start_time = time.time()
@@ -168,13 +169,13 @@ def render_latex_to_image(formula, name="latex"):
             fig.patch.set_visible(False)
             image_path = Path("data/formulas") / f"{name.replace(' ', '_')}.png"
             ax.axis('off')
-            ax.text(0.5, 0.5, f"${formula}$", fontsize=30, ha='center', va='center')
+            ax.text(0.5, 0.5, f"{formula}", fontsize=30, ha='center', va='center')
             image_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(image_path, bbox_inches='tight', transparent=True, dpi=150)
             plt.close()
             
             render_time = time.time() - start_time
-            print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s with $ escape")
+            print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s")
             
             # Cache the result
             formula_cache[cache_key] = str(image_path)
@@ -711,9 +712,90 @@ async def slide_data_gen(
         
         # Initialize Mistral client
         client = Mistral(api_key=settings.MISTRAL_API_KEY)
+
+        slide_prompt_1 = f"""Analyze this research paper and create a structured outline for a PowerPoint presentation tailored for a {student_level} audience, where student_level is either 'PhD researcher', 'Master's student', or 'Undergrad student'. Follow these guidelines:
+
+Pictures should only contain figure number, example (figure 2)
+
+Important: Once a formula is shown do not use it again
+
+CONSIDER Pictures AND FORMULA AS IMAGES
+
+DO NOT KEEP IMAGE/Pictures AND FORMULA IN SAME SLIDE
+
+Total slides should be : {num_slides} **Always follow this, must not be more than this**
+
+Title Slide: Create a concise, engaging title that captures the paper's essence.
+
+This is the first slide and a catchy subtitle. Bullets must be empty in this
+
+Agenda slide: The second slide which contains all subtitles of other slides as its bullet points
+
+Then State the paper's main research question and significance
+
+This acts like the title
+
+Highlight key background information relevant to the {student_level} audience
+
+For each section of the paper:
+
+Create 'Section Overview' slide with:
+
+Section title: bullet points summarizing key concepts in content
+
+Any critical formulas, using LaTeX notation
+
+Followed with in depth explanation slides that only if necessary and also break each point in section overview into one slide explaining in depth:
+
+Explain complex ideas using analogies or visualizations
+
+Break down important formulas step-by-step
+
+Highlight connections to prerequisite knowledge for the {student_level}
+
+Do this for all the chosen topics
+
+Make sure to
+
+Present key findings with supporting data or graphs
+
+Interpret results at a level appropriate for the {student_level}
+
+With great amount of details not missing any key information
+
+Discussion & Implications (1-2 slides):
+
+Outline the paper's main conclusions
+
+Discuss potential applications or future research directions
+
+Relate findings to broader field context for the {student_level}
+
+Key Takeaways slide:
+
+List 3-5 main points to remember, tailored to the {student_level}'s level
+
+Further Reading slide:
+
+Suggest 3-4 related papers or resources appropriate for the {student_level}
+
+For each slide, provide:
+
+A clear, concise headline as the subtitle
+
+Bullet points for main content (5-7 per slide)
+
+Notes on any visuals, charts, or diagrams to include from the paper mention the figure number
+
+Adjust the depth and complexity of the content based on the {student_level}, ensuring the presentation is informative and engaging for the specified audience level.
+
+Make sure to include the mathematical formulas where ever necessary
+
+Give the output in a json format and a dictionary tagging formuala and its name in json
+"""
         
         # Create slide prompt
-        slide_prompt = f"""Analyze this research paper and create a structured outline for a PowerPoint presentation tailored for a {student_level} audience, where student_level is either 'PhD researcher', 'Master's student', or 'Undergrad student'. Follow these guidelines:
+        slide_prompt_2 = f"""Analyze this research paper and create a structured outline for a PowerPoint presentation tailored for a {student_level} audience, where student_level is either 'PhD researcher', 'Master's student', or 'Undergrad student'. Follow these guidelines:
 
 Pictures should only contain figure number, example (figure 2)
 
@@ -785,11 +867,9 @@ For each slide, provide:
 
 A clear, concise headline as the subtitle
 
-Bullet points for main content (3-5 per slide)
+Bullet points for main content (5-7 per slide)
 
 Notes on any visuals, charts, or diagrams to include from the paper mention the figure number
-
-Speaker notes with additional context or explanations
 
 Adjust the depth and complexity of the content based on the {student_level}, ensuring the presentation is informative and engaging for the specified audience level.
 
@@ -798,6 +878,11 @@ Make sure to include the mathematical formulas where ever necessary
 Give the output in a json format and a dictionary tagging formuala and its name in json
 """        
         # Define the messages for the chat
+        if len(filtered_prerequisites) == 0:
+            slide_prompt = slide_prompt_1
+        else:
+            slide_prompt = slide_prompt_2
+
         messages = [
             {
                 "role": "user",
@@ -922,6 +1007,60 @@ async def process_slides_data():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
+@app.post("/enhace-slides-agent")
+async def enhance_slides_agent(
+    settings: Settings = Depends(get_settings)
+):
+    print(f"🔍 Starting enhancer agent parsing")
+    client = Mistral(api_key=settings.MISTRAL_API_KEY)
+    
+    execution_agent_id = settings.ENHANCE_AGENT_ID
+    json_dir = Path("data/metadata")
+    slides_data_path = json_dir / "updated_slides_data.json"
+    slides_data = load_json(slides_data_path)
+    if not settings.ENHANCE_AGENT_ID:
+            print("⚠️ EXECUTION_AGENT_ID not found, falling back to standard chat completion")
+    query=f"""
+Understand the current slides data as provided:
+{slides_data}
+
+And more data to the slides and maintain the same json format as the output
+
+For slides with formulas, explain them in technical terms rather than giving examples of usage
+"""
+    def run_analysis_execution_agent(query):
+        """
+        Sends a user query to a Python agent and returns the response.
+
+        Args:
+            query (str): The user query to be sent to the Python agent.
+
+        Returns:
+            str: The response content from the Python agent.
+        """
+        try:
+            response = client.agents.complete(
+                agent_id= execution_agent_id,
+                messages = [
+                    {
+                        "role": "user",
+                        "content":  query
+                    },
+                ]
+            )
+            result = response.choices[0].message.content
+            return result
+        except Exception as e:
+            print(f"Request failed: {e}. Please check your request.")
+            return None
+        
+    
+    enhance_agent=run_analysis_execution_agent(query)
+    data = extract_json(enhance_agent)
+    save_json(data, slides_data_path)
+    print(f"✅ Enhancer agent parsing completed")
+    """Enhance slides data using execution agent"""
+
 @app.post("/execution-agent-parsing")
 async def execution_agent_parsing(
     template_name: str = Form("template.pptx"),
@@ -1005,22 +1144,9 @@ async def execution_agent_parsing(
 
         ## And do not loose the content ##
 
-        ##final output must in JSON only
-        
-        The output format should be exactly like:
-        {{
-          "slides": [
-            {{
-              "slide_name": "[layout_name]",
-              "placeholders": {{
-                "[placeholder_name]_[index]": "[content]",
-                ...
-              }}
-            }},
-            ...
-          ]
-        }}
-        """
+        ## Do not add your own custom placeholders in the slide layout, use only the ones provided in the layout_details.json
+
+        ##final output must in JSON only"""
         
         client = Mistral(api_key=settings.MISTRAL_API_KEY)
         
@@ -1051,23 +1177,6 @@ async def execution_agent_parsing(
                 agent_result = response.choices[0].message.content
         
         print("Got the agent Response")
-        def extract_json(text):
-            match = re.search(r'```json(.*?)```', text, re.DOTALL)
-            if match:
-                json_str = match.group(1).strip()
-                try:
-                    return json.loads(json_str)
-                except json.JSONDecodeError as e:
-                    print(f"JSON Decoding Error: {e}")
-                    return None
-            else:
-                # Try to directly parse if it's already JSON
-                try:
-                    return json.loads(text)
-                except json.JSONDecodeError:
-                    print("No JSON block found in the agent output and direct parsing failed.")
-                    return None
-
 
         execution_agent_json = extract_json(agent_result)
         

@@ -35,7 +35,7 @@ const GeneratingPage = () => {
   const callAPI = async (endpoint, formData, errorMessage, extendedTimeout = false, required = true) => {
     try {
       // Use extended 10-minute timeout for execution-agent-parsing and generate-presentation
-      const timeout = extendedTimeout ? 600000 : 120000; // 10 mins vs 2 mins
+      const timeout = extendedTimeout ? 600000 : 600000; // 10 mins vs 2 mins
       
       // Log FormData contents for debugging
       if (formData instanceof FormData) {
@@ -221,10 +221,15 @@ const GeneratingPage = () => {
       setStatus('Processing slides...');
       setProgress(70);
       await callAPI('process-slides-data', new FormData(), 'Slide processing failed');
+
+      // 8. Enhance slides data (standard timeout)
+      setStatus('Enhancing slides...');
+      setProgress(80);
+      await callAPI('enhace-slides-agent', new FormData(), 'Slide enhancement failed');
       
       // 8. Execute agent parsing (EXTENDED 10-min timeout)
       setStatus('Designing your presentation...');
-      setProgress(80);
+      setProgress(90);
       const agentFormData = new FormData();
       agentFormData.append("template_name", safeTemplateName);
       console.log('🔍 Execution agent using template:', safeTemplateName);
@@ -244,7 +249,7 @@ const GeneratingPage = () => {
       
       // 9. Generate the final presentation (EXTENDED 10-min timeout)
       setStatus('Building your presentation...');
-      setProgress(90);
+      setProgress(95);
       const pptFormData = new FormData();
       pptFormData.append("template_name", safeTemplateName);
       pptFormData.append("execution_json_filename", "execution_agent.json");
