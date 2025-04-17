@@ -1339,7 +1339,7 @@ async def generate_presentation_from_execution_json(
         print(f"🔄 Creating slides from JSON data...")
         
         for slide_index, slide_data in enumerate(json_data.get("slides", [])):
-            layout_name = slide_data.get("slide_name")
+            layout_name = slide_data.get("layout")
             if not layout_name:
                 print(f"⚠️ Missing slide_name in slide {slide_index+1}, skipping")
                 continue
@@ -1470,11 +1470,15 @@ async def generate_presentation_from_execution_json(
         prs.save(temp_ppt_path)
         print(f"💾 Saved temporary presentation to {temp_ppt_path}")
 
+        prs_1 = Presentation(template_dir)
+        total__template_slides = len(prs_1.slides)
+
         # Load the presentation again to process slides
         prs = Presentation(temp_ppt_path)
         total_slides = len(prs.slides)
         
         # Only remove slides if there are enough slides
+        remove_slides_count = total__template_slides 
         if total_slides > remove_slides_count:
             slides_to_remove = remove_slides_count
             print(f"🧹 Removing {slides_to_remove} slides from the beginning")
