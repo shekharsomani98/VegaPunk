@@ -66,19 +66,19 @@ const SelectionPage = () => {
     <div className="flex justify-between items-center mt-4 mb-4">
       <button
         onClick={handleBack}
-        className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
+        className="px-6 py-3 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors flex items-center"
       >
         <ArrowLeftIcon className="h-5 w-5 mr-2" />
         Back
       </button>
       
-      <div className="text-gray-600">
+      <div className="text-gray-400">
         Selected topics: {Object.keys(selectedTiles).length} / {Object.keys(prerequisites).length}
       </div>
       
       <button
         onClick={handleNext}
-        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-colors flex items-center"
       >
         Next
         <ArrowRightIcon className="h-5 w-5 ml-2" />
@@ -88,13 +88,13 @@ const SelectionPage = () => {
 
   if (!location.state?.prerequisites) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-950 to-blue-950 p-8 flex items-center justify-center text-white">
         <div className="text-center max-w-md">
           <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Data Available</h2>
+          <h2 className="text-xl font-semibold text-white mb-2">No Data Available</h2>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-md hover:from-indigo-700 hover:to-blue-700"
           >
             Go to Home
           </button>
@@ -104,13 +104,13 @@ const SelectionPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 to-blue-950 p-8 text-white">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Select Required Prerequisites</h1>
-        <p className="text-gray-600 mb-6">
+        <h1 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300">Select Required Prerequisites</h1>
+        <p className="text-gray-400 mb-6">
           Select the topics you want to include in your presentation. 
           {Object.keys(selectedTiles).length === 0 && (
-            <span className="text-blue-600"> All topics will be included by default</span>
+            <span className="text-indigo-400"> All topics will be included by default</span>
           )}
         </p>
 
@@ -122,18 +122,18 @@ const SelectionPage = () => {
             <div
               key={title}
               onClick={() => toggleSelection(title)}
-              className={`relative p-6 rounded-lg shadow-sm cursor-pointer transition-all
+              className={`relative p-6 rounded-lg shadow-md cursor-pointer transition-all
                 ${selectedTiles[title] 
-                  ? 'bg-blue-50 border-2 border-blue-500' 
-                  : 'bg-white border-2 border-gray-200 hover:border-blue-300'}`}
+                  ? 'bg-indigo-900/30 border-2 border-indigo-500' 
+                  : 'bg-gray-900/80 border-2 border-gray-800 hover:border-indigo-600'}`}
             >
               {selectedTiles[title] && (
-                <CheckCircleIcon className="w-6 h-6 text-blue-600 absolute top-2 right-2" />
+                <CheckCircleIcon className="w-6 h-6 text-indigo-400 absolute top-2 right-2" />
               )}
-              <h3 className="text-lg font-semibold mb-3">{title}</h3>
+              <h3 className="text-lg font-semibold mb-3 text-white">{title}</h3>
               <ul className="list-disc list-inside space-y-1">
                 {items.map((item, index) => (
-                  <li key={index} className="text-gray-600 text-sm">{item}</li>
+                  <li key={index} className="text-gray-400 text-sm">{item}</li>
                 ))}
               </ul>
             </div>
@@ -144,14 +144,14 @@ const SelectionPage = () => {
           <div className="mb-4 flex justify-end">
             <button
               onClick={() => setSelectedTiles({})}
-              className="px-4 py-2 text-red-600 hover:text-red-700"
+              className="px-4 py-2 text-red-400 hover:text-red-300"
             >
               Clear Selection
             </button>
           </div>
 
           {error && (
-            <div className="p-3 bg-red-100 text-red-700 rounded-md mb-4">
+            <div className="p-3 bg-red-900/30 text-red-400 rounded-md mb-4 border border-red-800">
               {error}
             </div>
           )}

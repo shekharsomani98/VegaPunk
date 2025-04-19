@@ -313,19 +313,19 @@ const GeneratingPage = () => {
   // Error view with updated design
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 p-8 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-xl p-8 text-center border border-gray-100">
-          <div className="bg-red-50 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-950 to-blue-950 p-8 flex items-center justify-center">
+        <div className="max-w-md w-full bg-gray-900 rounded-xl shadow-xl p-8 text-center border border-gray-800">
+          <div className="bg-red-900/30 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
             <ExclamationTriangleIcon className="h-12 w-12 text-red-500" />
           </div>
           
-          <h1 className="text-2xl font-bold mb-4 bg-gradient-to-r from-red-600 to-red-500 text-transparent bg-clip-text">Generation Failed</h1>
-          <p className="text-gray-800 mb-6">{error}</p>
+          <h1 className="text-2xl font-bold mb-4 bg-gradient-to-r from-red-400 to-red-300 text-transparent bg-clip-text">Generation Failed</h1>
+          <p className="text-gray-300 mb-6">{error}</p>
           
           <div className="space-y-4">
             <button 
               onClick={handleRetry} 
-              className="w-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-blue-600 transition-colors shadow-md flex items-center justify-center"
+              className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-colors shadow-md flex items-center justify-center"
             >
               <ArrowPathIcon className="h-5 w-5 mr-2" />
               Try Again
@@ -333,7 +333,7 @@ const GeneratingPage = () => {
             
             <button 
               onClick={handleCancel}
-              className="w-full bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:from-gray-100 hover:to-gray-200 transition-colors shadow-sm border border-gray-200 flex items-center justify-center"
+              className="w-full bg-gray-800 text-gray-300 py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors shadow-sm border border-gray-700 flex items-center justify-center"
             >
               <XMarkIcon className="h-5 w-5 mr-2" />
               Cancel
@@ -346,64 +346,101 @@ const GeneratingPage = () => {
 
   // Main generating view with updated design
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 to-blue-950 p-4 md:p-8 text-white">
       <div className="max-w-4xl mx-auto">
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-xl shadow-lg p-6 mb-8 text-white">
+        <div className="bg-gradient-to-r from-indigo-800 to-blue-700 rounded-xl shadow-lg p-6 mb-8">
           <h1 className="text-2xl md:text-3xl font-bold">Creating Your Presentation</h1>
           <p className="opacity-90">This may take a few minutes. Please don't close this page.</p>
         </div>
         
         {/* Main content area */}
-        <div className="bg-white rounded-xl shadow-xl p-6 md:p-8 border border-gray-100">
+        <div className="bg-gradient-to-b from-gray-900 to-gray-950 rounded-xl shadow-xl p-6 md:p-8 border border-gray-800">
           {/* Status */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">{status}</h2>
-            <p className="text-gray-500">Time elapsed: {formatTime(timeElapsed)}</p>
+            <h2 className="text-xl font-semibold text-white mb-2">{status}</h2>
+            <p className="text-gray-400">Time elapsed: {formatTime(timeElapsed)}</p>
           </div>
           
-          {/* Progress bar */}
+          {/* Enhanced dynamic loading animation */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="cosmic-loader mb-6">
+              <div className="cosmic-orbit">
+                <div className="planet"></div>
+              </div>
+              <div className="cosmic-core"></div>
+              <div className="cosmic-particles">
+                <div className="particle p1"></div>
+                <div className="particle p2"></div>
+                <div className="particle p3"></div>
+                <div className="particle p4"></div>
+              </div>
+            </div>
+            
+            {/* Steps visualization */}
+            <div className="w-full max-w-md grid grid-cols-5 gap-2 mb-4">
+              {[20, 40, 60, 80, 100].map((step) => (
+                <div key={step} className="flex flex-col items-center">
+                  <div className={`h-2.5 w-2.5 rounded-full mb-1 ${
+                    progress >= step 
+                      ? 'bg-gradient-to-r from-indigo-400 to-blue-500 shadow-lg shadow-indigo-500/30' 
+                      : 'bg-gray-700'
+                  }`}></div>
+                  <div className={`h-1 w-full ${
+                    progress >= step 
+                      ? 'bg-gradient-to-r from-indigo-500 to-blue-600' 
+                      : 'bg-gray-800'
+                  }`}></div>
+                </div>
+              ))}
+            </div>
+            
+            <p className="text-sm font-medium text-indigo-300">
+              {progress < 30 && "Analyzing paper..."}
+              {progress >= 30 && progress < 60 && "Extracting key information..."}
+              {progress >= 60 && progress < 90 && "Creating slide content..."}
+              {progress >= 90 && "Finalizing presentation..."}
+            </p>
+          </div>
+          
+          {/* Enhanced progress bar */}
           <div className="mb-10">
-            <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-2">
+            <div className="h-3 bg-gray-800/60 rounded-full overflow-hidden mb-2 backdrop-blur-sm relative">
+              <div className="absolute inset-0 bg-gray-800 rounded-full"></div>
               <div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-blue-400 rounded-full transition-all duration-500 ease-out animate-pulse"
+                className="relative h-full bg-gradient-to-r from-indigo-600 via-blue-500 to-indigo-500 rounded-full transition-all duration-700 ease-out"
                 style={{ width: `${progress}%` }}
-              ></div>
+              >
+                <div className="absolute right-0 top-0 h-full w-4 bg-white/30 blur-sm"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20 rounded-full animate-pulse-slow"></div>
+              </div>
             </div>
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>Progress: {progress}%</span>
-              <span>{progress === 100 ? 'Complete!' : 'Processing...'}</span>
-            </div>
-          </div>
-          
-          {/* Loading animation */}
-          <div className="flex justify-center mb-8">
-            <div className="loading-spinner">
-              <div></div>
-              <div></div>
-              <div></div>
-              <div></div>
+            <div className="flex justify-between text-sm">
+              <span className="text-indigo-300 font-medium">{progress}% Complete</span>
+              <span className={`font-medium ${progress === 100 ? 'text-green-400' : 'text-blue-300'}`}>
+                {progress === 100 ? 'Complete!' : 'Processing...'}
+              </span>
             </div>
           </div>
           
           {/* Gallery preview if available */}
           {galleryStatus && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-medium text-gray-800 mb-2">
+            <div className="mt-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+              <h3 className="text-lg font-medium text-white mb-2">
                 Gallery Generation: {galleryStatus === 'processing' ? 'In Progress' : galleryStatus === 'success' ? 'Complete' : 'Failed'}
               </h3>
               
               {galleryLoaded && (
                 <button
                   onClick={() => setShowGallery(!showGallery)}
-                  className="text-sm bg-gradient-to-r from-indigo-500 to-blue-400 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-blue-500 transition-colors"
+                  className="text-sm bg-gradient-to-r from-indigo-600 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-indigo-700 hover:to-blue-600 transition-colors"
                 >
                   {showGallery ? 'Hide Gallery' : 'Preview Gallery'}
                 </button>
               )}
               
               {showGallery && galleryLoaded && (
-                <div className="mt-4 border border-gray-200 rounded-lg p-2 bg-white">
+                <div className="mt-4 border border-gray-700 rounded-lg p-2 bg-gray-800/50">
                   <GalleryRender />
                 </div>
               )}
@@ -414,7 +451,7 @@ const GeneratingPage = () => {
           <div className="mt-8 text-center">
             <button
               onClick={handleCancel}
-              className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              className="text-gray-400 hover:text-gray-300 text-sm font-medium"
             >
               Cancel and return to home
             </button>
@@ -424,60 +461,141 @@ const GeneratingPage = () => {
       
       {/* CSS for loading spinner */}
       <style jsx>{`
-        .loading-spinner {
-          display: inline-block;
+        .cosmic-loader {
           position: relative;
-          width: 80px;
-          height: 80px;
+          width: 120px;
+          height: 120px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          perspective: 800px;
         }
-        .loading-spinner div {
+        
+        .cosmic-core {
           position: absolute;
-          top: 33px;
-          width: 13px;
-          height: 13px;
+          width: 30px;
+          height: 30px;
+          background: radial-gradient(circle, #6366f1, #3b82f6);
           border-radius: 50%;
-          background: linear-gradient(to right, #6366f1, #3b82f6);
-          animation-timing-function: cubic-bezier(0, 1, 1, 0);
+          box-shadow: 0 0 20px 5px rgba(99, 102, 241, 0.5);
+          z-index: 20;
+          animation: pulse 2s ease-in-out infinite;
         }
-        .loading-spinner div:nth-child(1) {
-          left: 8px;
-          animation: loading-spinner1 0.6s infinite;
+        
+        .cosmic-orbit {
+          position: absolute;
+          width: 100px;
+          height: 100px;
+          border: 1px solid rgba(99, 102, 241, 0.2);
+          border-radius: 50%;
+          animation: rotate-3d 8s linear infinite;
+          transform-style: preserve-3d;
         }
-        .loading-spinner div:nth-child(2) {
-          left: 8px;
-          animation: loading-spinner2 0.6s infinite;
+        
+        .planet {
+          position: absolute;
+          top: -6px;
+          left: 45px;
+          width: 12px;
+          height: 12px;
+          background: linear-gradient(to right, #8b5cf6, #60a5fa);
+          border-radius: 50%;
+          box-shadow: 0 0 10px 2px rgba(139, 92, 246, 0.7);
         }
-        .loading-spinner div:nth-child(3) {
-          left: 32px;
-          animation: loading-spinner2 0.6s infinite;
+        
+        .cosmic-particles {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          z-index: 10;
         }
-        .loading-spinner div:nth-child(4) {
-          left: 56px;
-          animation: loading-spinner3 0.6s infinite;
+        
+        .particle {
+          position: absolute;
+          width: 6px;
+          height: 6px;
+          background: white;
+          border-radius: 50%;
+          filter: blur(1px);
+          opacity: 0;
         }
-        @keyframes loading-spinner1 {
+        
+        .p1 {
+          top: 20%;
+          left: 50%;
+          background: #6366f1;
+          animation: particle-float 4s ease-in-out infinite;
+          animation-delay: 0s;
+        }
+        
+        .p2 {
+          top: 50%;
+          left: 20%;
+          background: #3b82f6;
+          animation: particle-float 4s ease-in-out infinite;
+          animation-delay: 1s;
+        }
+        
+        .p3 {
+          top: 70%;
+          left: 60%;
+          background: #8b5cf6;
+          animation: particle-float 4s ease-in-out infinite;
+          animation-delay: 2s;
+        }
+        
+        .p4 {
+          top: 40%;
+          left: 80%;
+          background: #60a5fa;
+          animation: particle-float 4s ease-in-out infinite;
+          animation-delay: 3s;
+        }
+        
+        @keyframes rotate-3d {
           0% {
-            transform: scale(0);
+            transform: rotateX(75deg) rotateY(0deg) rotateZ(0deg);
           }
           100% {
-            transform: scale(1);
+            transform: rotateX(75deg) rotateY(0deg) rotateZ(360deg);
           }
         }
-        @keyframes loading-spinner3 {
-          0% {
-            transform: scale(1);
+        
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(0.8);
+            opacity: 0.8;
           }
-          100% {
-            transform: scale(0);
+          50% {
+            transform: scale(1);
+            opacity: 1;
           }
         }
-        @keyframes loading-spinner2 {
+        
+        @keyframes particle-float {
           0% {
             transform: translate(0, 0);
+            opacity: 0;
+          }
+          25% {
+            opacity: 0.8;
+          }
+          50% {
+            transform: translate(20px, -20px);
+            opacity: 0.4;
+          }
+          75% {
+            opacity: 0.6;
           }
           100% {
-            transform: translate(24px, 0);
+            transform: translate(0, 0);
+            opacity: 0;
           }
+        }
+        
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.7; }
+          50% { opacity: 0.3; }
         }
       `}</style>
     </div>
