@@ -393,50 +393,101 @@ const SuccessPage = () => {
   // Show error tooltips on hover for more context
   const showErrorTooltip = galleryStatus === 'error' && errorMsg;
 
+  // Handle retry with different template
+  const handleStartOver = () => {
+    navigate('/');
+  };
+  
+  const handleCreatePodcast = () => {
+    navigate('/podcast', { state: location.state });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-md w-full mx-auto bg-white rounded-lg shadow-md p-8 text-center">
-        <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Presentation Generated!</h1>
-        <p className="text-gray-600 mb-6">
-          Your presentation has been successfully created and is ready to download.
-        </p>
-        
-        <div className="space-y-4">
-          <button 
-            onClick={handleDownload}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center"
-          >
-            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-            Download Presentation
-          </button>
-          
-          {galleryEnabled && (
-            <div className="relative">
-              <button 
-                onClick={() => galleryStatus === 'ready' ? setShowGallery(true) : galleryStatus === 'error' ? handleRetryGallery() : null}
-                className={getGalleryButtonStyle()}
-                disabled={galleryStatus === 'processing' || galleryStatus === 'loading'}
-              >
-                {getGalleryButtonText()}
-              </button>
-              
-              {showErrorTooltip && (
-                <div className="absolute bottom-full left-0 mb-2 w-full p-2 bg-red-100 text-red-700 text-xs rounded shadow-lg">
-                  {errorMsg || "There was an error processing the gallery. Click to retry."}
-                </div>
-              )}
-            </div>
-          )}
-          
-          <button 
-            onClick={() => navigate('/')}
-            className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-md hover:bg-gray-200 flex items-center justify-center"
-          >
-            <HomeIcon className="h-5 w-5 mr-2" />
-            Back to Home
-          </button>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 p-8">
+      <div className="max-w-4xl mx-auto bg-gray-950 rounded-xl shadow-2xl p-8 border border-gray-800">
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-900/30 rounded-full mb-6">
+            <CheckCircleIcon className="h-12 w-12 text-green-500" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">Your Presentation Is Ready!</h1>
+          <p className="text-gray-400 mt-3 text-lg">
+            You can download your presentation now or create additional materials
+          </p>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+          <div className="bg-gradient-to-br from-blue-900/20 to-indigo-900/20 rounded-xl p-8 shadow-xl border border-blue-800/30 hover:border-blue-700/50 transition-all duration-300 transform hover:-translate-y-1">
+            <h2 className="text-2xl font-bold text-blue-400 mb-4">Download Presentation</h2>
+            <p className="text-gray-300 mb-6 min-h-[60px]">
+              Your presentation has been successfully generated and is ready to download.
+            </p>
+            <button
+              onClick={handleDownload}
+              className="flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-lg text-base font-medium text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 w-full transition-all duration-300"
+            >
+              <ArrowDownTrayIcon className="h-6 w-6 mr-2" /> Download PPTX
+            </button>
+          </div>
+          
+          <div className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-xl p-8 shadow-xl border border-purple-800/30 hover:border-purple-700/50 transition-all duration-300 transform hover:-translate-y-1">
+            <h2 className="text-2xl font-bold text-purple-400 mb-4">Create Podcast</h2>
+            <p className="text-gray-300 mb-6 min-h-[60px]">
+              Turn your paper into a podcast with a host and expert discussing the key points.
+            </p>
+            <button
+              onClick={handleCreatePodcast}
+              className="flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-lg text-base font-medium text-white bg-purple-600 hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-purple-500 w-full transition-all duration-300"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              Create Podcast
+            </button>
+          </div>
+        </div>
+
+        {/* Enhanced gallery container */}
+        {galleryEnabled && (
+          <div className="mb-10 bg-gradient-to-br from-emerald-900/20 to-teal-900/20 rounded-xl p-8 shadow-xl border border-emerald-800/30 hover:border-emerald-700/50 transition-all duration-300">
+            <h2 className="text-2xl font-bold text-emerald-400 mb-4">Paper Gallery</h2>
+            <p className="text-gray-300 mb-6">
+              {galleryStatus === 'ready' 
+                ? "View and explore the extracted images and tables from your paper."
+                : galleryStatus === 'processing'
+                ? "The gallery is still being generated. This could take a few minutes."
+                : galleryStatus === 'error'
+                ? errorMsg || "There was an error generating the gallery. You can try again."
+                : "Loading gallery status..."}
+            </p>
+            <button
+              onClick={() => galleryStatus === 'ready' ? setShowGallery(true) : handleRetryGallery()}
+              disabled={galleryStatus === 'processing'}
+              className={`flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-lg text-base font-medium ${
+                galleryStatus === 'ready'
+                  ? 'text-white bg-emerald-600 hover:bg-emerald-500'
+                  : galleryStatus === 'processing'
+                  ? 'text-gray-400 bg-gray-700 cursor-not-allowed'
+                  : 'text-white bg-amber-600 hover:bg-amber-500'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-emerald-500 w-full transition-all duration-300`}
+            >
+              {galleryStatus === 'ready' 
+                ? (<><PhotoIcon className="h-6 w-6 mr-2" /> View Gallery</>) 
+                : galleryStatus === 'processing'
+                ? (<><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-2"></div> Processing...</>)
+                : (<><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg> Retry Gallery Generation</>)}
+            </button>
+          </div>
+        )}
+
+        <button 
+          onClick={handleStartOver}
+          className="w-full bg-gray-800 text-gray-300 py-4 px-6 rounded-lg hover:bg-gray-700 flex items-center justify-center transition-all duration-300 border border-gray-700 hover:border-gray-600"
+        >
+          <HomeIcon className="h-6 w-6 mr-2" />
+          Back to Home
+        </button>
       </div>
       
       {/* VegaViewer style gallery modal */}

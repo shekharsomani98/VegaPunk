@@ -131,37 +131,65 @@ const UploadPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Create Presentation</h1>
+        <div className="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-xl shadow-xl p-8 text-white mb-8">
+          <h1 className="text-3xl font-bold">Create Presentation</h1>
+          <p className="mt-2 opacity-80">Upload a research paper to get started</p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-lg font-medium mb-4">Analyze from arXiv URL</h2>
-            <input
-              type="url"
-              value={arxivUrl}
-              onChange={(e) => {
-                setArxivUrl(e.target.value);
-                setError('');
-              }}
-              placeholder="https://arxiv.org/abs/2406.15758"
-              className="w-full p-2 border rounded-md"
-              disabled={!!pdfFile || isLoading}
-            />
+          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-800">Analyze from arXiv URL</h2>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+              </div>
+              <input
+                type="url"
+                value={arxivUrl}
+                onChange={(e) => {
+                  setArxivUrl(e.target.value);
+                  setError('');
+                }}
+                placeholder="https://arxiv.org/abs/2406.15758"
+                className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={!!pdfFile || isLoading}
+              />
+            </div>
+            
+            <p className="mt-2 text-sm text-gray-500 flex items-center">
+              <svg className="h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Enter a valid arXiv URL (e.g., https://arxiv.org/abs/2406.15758)
+            </p>
             
             {/* Recent URLs */}
             {recentUrls.length > 0 && (
-              <div className="mt-3">
-                <p className="text-sm text-gray-600 mb-2">Recent papers:</p>
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Recent papers:</p>
                 <div className="flex flex-wrap gap-2">
                   {recentUrls.map((url, index) => (
                     <button
                       key={index}
                       type="button"
                       onClick={() => setArxivUrl(url)}
-                      className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100"
+                      className="text-xs bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 px-3 py-1.5 rounded-full hover:from-indigo-100 hover:to-blue-100 transition-colors border border-indigo-100 shadow-sm flex items-center"
                     >
+                      <svg className="h-3 w-3 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
                       {url.split('/').pop()}
                     </button>
                   ))}
@@ -170,53 +198,92 @@ const UploadPage = () => {
             )}
           </div>
 
-          <div className="text-center text-gray-500">OR</div>
+          <div className="flex items-center justify-center">
+            <div className="w-16 h-px bg-gray-300"></div>
+            <div className="mx-4 text-gray-500 font-medium">OR</div>
+            <div className="w-16 h-px bg-gray-300"></div>
+          </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-lg font-medium mb-4">Upload PDF</h2>
+          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-800">Upload PDF</h2>
+            </div>
+            
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-                ${isDragActive ? 'border-blue-500 bg-blue-50' : isLoading ? 'border-gray-300 opacity-50' : 'border-gray-300'}`}
+              className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all
+                ${isDragActive 
+                  ? 'border-indigo-500 bg-indigo-50' 
+                  : isLoading 
+                    ? 'border-gray-300 opacity-50' 
+                    : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50/30'}`}
               style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
             >
               <input {...getInputProps()} disabled={isLoading} />
-              <p className="text-gray-600">
-                {isDragActive ? 'Drop PDF here' : 'Click to upload or drag and drop'}
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                PDF only (max 50 MB)
-              </p>
-              {pdfFile && (
-                <p className="mt-2 text-blue-600 text-sm">
-                  Selected: {pdfFile.name}
+              
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                
+                <p className="text-gray-700 font-medium">
+                  {isDragActive ? 'Drop your PDF here' : 'Click to browse or drag and drop'}
                 </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  PDF only (max 50 MB)
+                </p>
+              </div>
+              
+              {pdfFile && (
+                <div className="mt-4 bg-indigo-50 rounded-lg p-3 inline-flex items-center">
+                  <svg className="h-5 w-5 text-indigo-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="text-indigo-700 font-medium">{pdfFile.name}</span>
+                </div>
               )}
             </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-red-100 text-red-700 rounded-md">
-              {error}
+            <div className="p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 flex items-start">
+              <svg className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
           {isLoading ? (
-            <div className="p-6 bg-white rounded-lg shadow-sm text-center">
-              <div className="flex justify-center items-center mb-4">
+            <div className="p-8 bg-white rounded-xl shadow-md border border-gray-100 text-center">
+              <div className="flex justify-center items-center mb-6">
                 <div className="loader">
                   <div className="paper-plane"></div>
                 </div>
               </div>
-              <p className="font-medium text-lg text-gray-800 mb-1">Analyzing Paper</p>
-              <p className="text-gray-600">This may take a minute...</p>
+              <p className="font-bold text-xl text-gray-800 mb-2">Analyzing Paper</p>
+              <p className="text-gray-600">This may take a minute while we extract the key concepts</p>
+              <div className="mt-5 w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div className="animate-pulse-width bg-gradient-to-r from-indigo-500 to-blue-500 h-2.5 rounded-full"></div>
+              </div>
             </div>
           ) : (
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-blue-500 text-white text-lg font-medium rounded-lg hover:from-indigo-700 hover:to-blue-600 transition-colors shadow-md flex items-center justify-center"
+              disabled={(!arxivUrl && !pdfFile) || isLoading}
             >
-              Continue
+              <span>Continue</span>
+              <svg className="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
             </button>
           )}
         </form>
@@ -235,7 +302,7 @@ const UploadPage = () => {
           left: 0;
           width: 50px;
           height: 50px;
-          background-color: #4285F4;
+          background-color: #6366F1;
           border-radius: 0 10px 0 50px;
           transform: rotate(45deg);
           animation: fly 2.4s cubic-bezier(.99,.01,.25,1) infinite;
@@ -247,29 +314,35 @@ const UploadPage = () => {
           left: -11px;
           width: 20px;
           height: 20px;
-          background-color: #4285F4;
-          border-radius: 0 0 4px 0;
-          transform: rotate(-45deg);
+          background-color: #6366F1;
+          transform: skew(-20deg, -20deg);
         }
         .paper-plane:after {
           content: '';
           position: absolute;
-          width: 40px;
-          height: 10px;
-          background-color: #4285F4;
-          top: -4px;
-          left: -40px;
-          border-radius: 10px 0 10px 0;
-          transform: rotate(45deg);
+          left: -28px;
+          width: 30px;
+          height: 30px;
+          background-color: #6366F1;
+          border-radius: 4px 0 10px 0;
+          transform: skew(-30deg, -30deg);
         }
         
         @keyframes fly {
-          0% { transform: translate(0, 0) rotate(45deg); }
-          20% { transform: translate(80px, -10px) rotate(35deg); }
-          40% { transform: translate(160px, 0) rotate(45deg); }
-          60% { transform: translate(240px, 10px) rotate(55deg); }
-          80% { transform: translate(320px, 0) rotate(45deg); }
-          100% { transform: translate(0, 0) rotate(45deg); }
+          0% { transform: rotate(45deg) translateX(-120px) translateY(-120px); }
+          30% { transform: rotate(45deg) translateX(50px) translateY(50px); }
+          50% { transform: rotate(45deg) translateX(50px) translateY(50px); background-color: #4F46E5; }
+          66% { transform: rotate(45deg) translateX(0px) translateY(0px); }
+          100% { transform: rotate(45deg) translateX(120px) translateY(120px); }
+        }
+        
+        @keyframes pulse-width {
+          0%, 100% { width: 30%; }
+          50% { width: 70%; }
+        }
+        
+        .animate-pulse-width {
+          animation: pulse-width 2s ease-in-out infinite;
         }
       `}</style>
     </div>

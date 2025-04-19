@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import GalleryRender from '../components/GalleryRender';
+import { ArrowPathIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
 const GeneratingPage = () => {
   const location = useLocation();
@@ -287,144 +288,198 @@ const GeneratingPage = () => {
     }
   };
 
-  // Handle retry with different template
-  const handleRetry = () => {
-    navigate('/template', { 
-      state: location.state
-    });
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // Force to restart or cancel if stuck
+  const handleRetry = () => {
+    setError(null);
+    setProgress(0);
+    setTimeElapsed(0);
+    generatePresentation();
+  };
+
   const handleCancel = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
     navigate('/');
   };
 
   useEffect(() => {
     generatePresentation();
-    
-    // Cleanup function
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
   }, []);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' + secs : secs}`;
-  };
-
-  // Only show cancel option for extended periods of inactivity
-  const showCancelOption = timeElapsed > 300; // 5 minutes
-
+  // Error view with updated design
   if (error) {
-  return (
-    <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
-        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md text-center mx-auto">
-          <div className="text-red-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 p-8 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-xl p-8 text-center border border-gray-100">
+          <div className="bg-red-50 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+            <ExclamationTriangleIcon className="h-12 w-12 text-red-500" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">Generation Error</h2>
-          <p className="text-gray-700 mb-6">
-            {error}
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={handleRetry}
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          
+          <h1 className="text-2xl font-bold mb-4 bg-gradient-to-r from-red-600 to-red-500 text-transparent bg-clip-text">Generation Failed</h1>
+          <p className="text-gray-800 mb-6">{error}</p>
+          
+          <div className="space-y-4">
+            <button 
+              onClick={handleRetry} 
+              className="w-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-blue-600 transition-colors shadow-md flex items-center justify-center"
             >
-              Choose Different Template
+              <ArrowPathIcon className="h-5 w-5 mr-2" />
+              Try Again
             </button>
-            <button
+            
+            <button 
               onClick={handleCancel}
-              className="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              className="w-full bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:from-gray-100 hover:to-gray-200 transition-colors shadow-sm border border-gray-200 flex items-center justify-center"
             >
-              Return to Home
+              <XMarkIcon className="h-5 w-5 mr-2" />
+              Cancel
             </button>
-        </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Main generating view with updated design
   return (
-    <div className="min-h-screen bg-gray-50 p-8 flex flex-col items-center justify-center">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md text-center mx-auto">
-        <div className="mb-6">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold">{status}</h2>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
-              style={{width: `${progress}%`}}
-            ></div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header with gradient */}
+        <div className="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-xl shadow-lg p-6 mb-8 text-white">
+          <h1 className="text-2xl md:text-3xl font-bold">Creating Your Presentation</h1>
+          <p className="opacity-90">This may take a few minutes. Please don't close this page.</p>
+        </div>
+        
+        {/* Main content area */}
+        <div className="bg-white rounded-xl shadow-xl p-6 md:p-8 border border-gray-100">
+          {/* Status */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">{status}</h2>
+            <p className="text-gray-500">Time elapsed: {formatTime(timeElapsed)}</p>
           </div>
-          <p className="text-gray-500 mt-2">
-            {progress}% complete • Time elapsed: {formatTime(timeElapsed)}
-          </p>
-          {status === 'Designing your presentation...' || status === 'Building your presentation...' ? (
-            <p className="text-yellow-600 text-sm mt-2">
-              This step may take several minutes. Please be patient.
-            </p>
-          ) : null}
-        </div>
-        
-        <div className="border-t border-gray-200 pt-4 mt-4">
-          <p className="text-sm text-gray-600">
-            Template: <span className="font-medium">{location.state.templateName}</span>
-          </p>
-          <p className="text-sm text-gray-600 mt-1">
-            Slides: <span className="font-medium">{location.state.settings.num_slides}</span>
-          </p>
-          <p className="text-sm text-gray-600 mt-1">
-            Level: <span className="font-medium">
-              {location.state.studentLevel === "1" ? "PhD Researcher" :
-               location.state.studentLevel === "2" ? "Masters Student" : 
-               "Undergraduate Student"}
-            </span>
-          </p>
-        </div>
-        
-        {showCancelOption && (
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <p className="text-amber-600 mb-3">
-              This is taking longer than expected. The server might be processing a complex document.
-            </p>
+          
+          {/* Progress bar */}
+          <div className="mb-10">
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-500 to-blue-400 rounded-full transition-all duration-500 ease-out animate-pulse"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>Progress: {progress}%</span>
+              <span>{progress === 100 ? 'Complete!' : 'Processing...'}</span>
+            </div>
+          </div>
+          
+          {/* Loading animation */}
+          <div className="flex justify-center mb-8">
+            <div className="loading-spinner">
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+            </div>
+          </div>
+          
+          {/* Gallery preview if available */}
+          {galleryStatus && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-medium text-gray-800 mb-2">
+                Gallery Generation: {galleryStatus === 'processing' ? 'In Progress' : galleryStatus === 'success' ? 'Complete' : 'Failed'}
+              </h3>
+              
+              {galleryLoaded && (
+                <button
+                  onClick={() => setShowGallery(!showGallery)}
+                  className="text-sm bg-gradient-to-r from-indigo-500 to-blue-400 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-blue-500 transition-colors"
+                >
+                  {showGallery ? 'Hide Gallery' : 'Preview Gallery'}
+                </button>
+              )}
+              
+              {showGallery && galleryLoaded && (
+                <div className="mt-4 border border-gray-200 rounded-lg p-2 bg-white">
+                  <GalleryRender />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Cancel button */}
+          <div className="mt-8 text-center">
             <button
               onClick={handleCancel}
-              className="w-full py-2 px-4 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+              className="text-gray-500 hover:text-gray-700 text-sm font-medium"
             >
               Cancel and return to home
             </button>
           </div>
-        )}
+        </div>
       </div>
       
-      {/* Add the gallery component if gallery generation was enabled */}
-      {location.state?.settings?.generate_gallery && (
-        <div className="mt-6 w-full max-w-md mx-auto">
-          <div className="p-4 bg-white rounded-lg shadow-sm">
-            <h2 className="text-lg font-medium mb-2">Paper Gallery</h2>
-            {galleryStatus === 'success' ? (
-              <>
-                <p className="text-green-600 mb-3">
-                  Gallery successfully generated! You can view it on the success page.
-                </p>
-              </>
-            ) : galleryStatus === 'error' ? (
-              <p className="text-red-600 mb-3">
-                There was an issue generating the gallery. You can try again later.
-              </p>
-            ) : (
-              <p className="text-gray-600 mb-3">
-                Extracting images and tables from your paper...
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      {/* CSS for loading spinner */}
+      <style jsx>{`
+        .loading-spinner {
+          display: inline-block;
+          position: relative;
+          width: 80px;
+          height: 80px;
+        }
+        .loading-spinner div {
+          position: absolute;
+          top: 33px;
+          width: 13px;
+          height: 13px;
+          border-radius: 50%;
+          background: linear-gradient(to right, #6366f1, #3b82f6);
+          animation-timing-function: cubic-bezier(0, 1, 1, 0);
+        }
+        .loading-spinner div:nth-child(1) {
+          left: 8px;
+          animation: loading-spinner1 0.6s infinite;
+        }
+        .loading-spinner div:nth-child(2) {
+          left: 8px;
+          animation: loading-spinner2 0.6s infinite;
+        }
+        .loading-spinner div:nth-child(3) {
+          left: 32px;
+          animation: loading-spinner2 0.6s infinite;
+        }
+        .loading-spinner div:nth-child(4) {
+          left: 56px;
+          animation: loading-spinner3 0.6s infinite;
+        }
+        @keyframes loading-spinner1 {
+          0% {
+            transform: scale(0);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        @keyframes loading-spinner3 {
+          0% {
+            transform: scale(1);
+          }
+          100% {
+            transform: scale(0);
+          }
+        }
+        @keyframes loading-spinner2 {
+          0% {
+            transform: translate(0, 0);
+          }
+          100% {
+            transform: translate(24px, 0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

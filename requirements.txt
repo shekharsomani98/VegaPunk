@@ -1,0 +1,15 @@
+fastapi>=0.103.0
+uvicorn>=0.22.0
+pydantic>=2.1.0
+python-multipart>=0.0.6
+melo>=0.1.0
+pydub>=0.25.1
+mistralai>=0.0.10
+aiofiles>=23.1.0
+python-dotenv>=1.0.0
+pypdf==4.1.0
+pyttsx3==2.90
+matplotlib==3.9.2
+pillow==10.4.0
+python-pptx==1.0.1
+sympy==1.13.3 
