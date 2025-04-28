@@ -6,7 +6,7 @@ import json
 import re
 import os
 import hashlib
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Optional, List, Dict, Any
 from pydantic_settings import BaseSettings
 from functools import lru_cache
@@ -33,7 +33,11 @@ import random
 from pydub import AudioSegment
 from melo.api import TTS
 import json
+import tempfile, subprocess
 from podcast_api import generate_podcast
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
 
 # Configuration settings
 class Settings(BaseSettings):
@@ -87,6 +91,10 @@ class Slides(BaseModel):
 
 class Ppt(BaseModel):
     content: List[Slides]
+
+class SlideData(BaseModel):
+    content: List[Slides]   # 这里复用你已经定义好的 Slides 模型
+
 
 # Cache for analysis results
 analysis_cache = {}
@@ -145,52 +153,53 @@ def parse_prerequisites(text: str) -> dict:
     return prerequisites
 
 # Function to render LaTeX formulas as images
-def render_latex_to_image(formula, name="latex"):
-    """Render LaTeX formula to image using matplotlib"""
-    # Check cache first
-    cache_key = f"{formula}_{name}"
-    if cache_key in formula_cache:
-        return formula_cache[cache_key]
-    
+
+def render_latex_to_image(formula: str, name: str="latex", dpi: int=200) -> str:
+    """
+    用 LaTeX + dvipng 生成高质量公式 PNG。
+
+    参数:
+      - formula: 纯公式内容，不要包含外围的 $…$。  
+      - name: 用于文件名的标识，会生成 data/formulas/{name}.png  
+      - dpi: 输出 PNG 的分辨率。
+
+    返回:
+      - 生成的 PNG 路径
+    """
+    # 保证输出目录存在
+    out_dir = Path("data/formulas")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    output_path = out_dir / f"{name.replace(' ', '_')}.png"
+
+    # Sympy.preview 会：
+    #   1) 在临时目录里写一个最简单的 standalone LaTeX 文档
+    #   2) pdflatex 编译成 DVI/PDF
+    #   3) 调用 dvipng 生成 PNG
     try:
-        start_time = time.time()
-        fig, ax = plt.subplots()
+        preview(
+            f"${formula}$",
+            output='png',
+            viewer='file',
+            filename=str(output_path),
+            dvioptions=[f"-D{dpi}", "-Ttight"]
+        )
+        return str(output_path)
+    except Exception as e:
+        print(f"❌ render_latex_to_image 失败，回退到 Matplotlib: {e}")
+
+    # 回退方案：Matplotlib + usetex
+    try:
+        plt.rcParams.update({"text.usetex": True})
+        fig = plt.figure(figsize=(0.01, 0.01))
         fig.patch.set_visible(False)
-        image_path = Path("data/formulas") / f"{name.replace(' ', '_')}.png"
-        ax.axis('off')
-        ax.text(0.5, 0.5, f"${formula}$", fontsize=30, ha='center', va='center')
-        image_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(image_path, bbox_inches='tight', transparent=True, dpi=150)
-        plt.close()
-        
-        render_time = time.time() - start_time
-        print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s with $ escape")
-        
-        # Cache the result
-        formula_cache[cache_key] = str(image_path)
-        return str(image_path)
-        
-    except:
-        try:
-            start_time = time.time()
-            fig, ax = plt.subplots()
-            fig.patch.set_visible(False)
-            image_path = Path("data/formulas") / f"{name.replace(' ', '_')}.png"
-            ax.axis('off')
-            ax.text(0.5, 0.5, f"{formula}", fontsize=30, ha='center', va='center')
-            image_path.parent.mkdir(parents=True, exist_ok=True)
-            plt.savefig(image_path, bbox_inches='tight', transparent=True, dpi=150)
-            plt.close()
-            
-            render_time = time.time() - start_time
-            print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s")
-            
-            # Cache the result
-            formula_cache[cache_key] = str(image_path)
-            return str(image_path)
-        except Exception as e:
-            print(f"❌ Error rendering formula '{name}': {str(e)}")
-            return ""
+        fig.text(0.5, 0.5, f"${formula}$", ha='center', va='center', fontsize=20)
+        plt.savefig(output_path, dpi=dpi, bbox_inches='tight', pad_inches=0.1, transparent=True)
+        plt.close(fig)
+        return str(output_path)
+    except Exception as e2:
+        print(f"⚠️ Matplotlib 回退也失败：{e2}")
+        return ""
+
 
 # Directory cleaning function
 def clean_directories(directories=None):
@@ -926,7 +935,15 @@ Give the output in a json format and a dictionary tagging formuala and its name 
         
         input_slides_path = Path(config.TEMPLATE_METADATA_DIR) / "slides_data.json"
         try:
-            save_json(slides, input_slides_path)
+            if isinstance(slides, BaseModel):
+                slides_to_save = slides.dict()    # Pydantic 模型
+            elif isinstance(slides, str):
+                slides_to_save = json.loads(slides)  # 如果它真的是个 JSON 字符串
+            else:
+                slides_to_save = slides             # 本身就是个 dict/list
+
+            # 再存到文件
+            save_json(slides_to_save, input_slides_path)
             print(f"✅ Saved slides data to {input_slides_path}")
         except Exception as e:
             print(f"❌ Error saving slides data: {e}")
@@ -965,11 +982,20 @@ async def process_slides_data():
         for file_path in metadata_dir.glob("*"):
             print(f"  - {file_path.name} ({file_path.stat().st_size} bytes)")
 
+        # 先单独处理 load_json
         try:
-            slides_data = load_json(input_slides_path)
+            raw = load_json(input_slides_path)
         except Exception as e:
             print(f"❌ Error loading slides_data.json: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to load slides_data.json: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to load slides_data.json: {e}")
+
+        # 再单独处理 Pydantic 校验
+        try:
+            slide_data_obj = SlideData.parse_obj(raw)
+            slides_data = slide_data_obj.dict()
+        except ValidationError as ve:
+            print(f"❌ slides_data.json 验证失败：{ve}")
+            raise HTTPException(status_code=400, detail=f"slides_data.json 格式错误：{ve}")
         
         # Check if figures metadata exists
         image_data = {}
@@ -1016,59 +1042,103 @@ async def process_slides_data():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
+
 @app.post("/enhace-slides-agent")
 async def enhance_slides_agent(
     settings: Settings = Depends(get_settings)
 ):
-    print(f"🔍 Starting enhancer agent parsing")
+    print("🔍 Starting enhancer agent parsing")
     client = Mistral(api_key=settings.MISTRAL_API_KEY)
-    
+
     execution_agent_id = settings.ENHANCE_AGENT_ID
     json_dir = Path("data/metadata")
     slides_data_path = json_dir / "updated_slides_data.json"
-    slides_data = load_json(slides_data_path)
-    if not settings.ENHANCE_AGENT_ID:
-            print("⚠️ EXECUTION_AGENT_ID not found, falling back to standard chat completion")
-    query=f"""
+
+    # 1) 加载已存在的 slides data
+    try:
+        slides_data = load_json(slides_data_path)
+        print("✅ Loaded slides_data:", slides_data_path, f"(contains {len(slides_data.get('content', []))} slides)")
+    except Exception as e:
+        print(f"❌ Error loading {slides_data_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to load existing slides data: {e}")
+
+    # 2) 构造 agent 查询
+    if not execution_agent_id:
+        print("⚠️ ENHANCE_AGENT_ID not found, falling back to standard chat completion")
+
+    query = f"""
 Understand the current slides data as provided:
 {slides_data}
 
-And more data to the slides and maintain the same json format as the output
+And add more data to the slides, maintaining the same JSON format.
 
-For slides with formulas, explain them in technical terms rather than giving examples of usage
+For slides with formulas, explain them in technical terms rather than giving usage examples.
+
+IMPORTANT: Output must be pure JSON—no backticks, no extra text, no explanations.
 """
-    def run_analysis_execution_agent(query):
-        """
-        Sends a user query to a Python agent and returns the response.
 
-        Args:
-            query (str): The user query to be sent to the Python agent.
-
-        Returns:
-            str: The response content from the Python agent.
-        """
+    # 3) 调用 agent
+    def run_analysis_execution_agent(q: str) -> str:
         try:
-            response = client.agents.complete(
-                agent_id= execution_agent_id,
-                messages = [
-                    {
-                        "role": "user",
-                        "content":  query
-                    },
-                ]
-            )
-            result = response.choices[0].message.content
-            return result
-        except Exception as e:
-            print(f"Request failed: {e}. Please check your request.")
+            if execution_agent_id:
+                resp = client.agents.complete(
+                    agent_id=execution_agent_id,
+                    messages=[{"role": "user", "content": q}]
+                )
+            else:
+                resp = client.chat.complete(
+                    model=settings.MODEL_NAME,
+                    messages=[{"role": "user", "content": q}]
+                )
+            return resp.choices[0].message.content
+        except Exception as err:
+            print(f"❌ Agent request failed: {err}")
             return None
-        
-    
-    enhance_agent=run_analysis_execution_agent(query)
-    data = extract_json(enhance_agent)
-    save_json(data, slides_data_path)
-    print(f"✅ Enhancer agent parsing completed")
-    """Enhance slides data using execution agent"""
+
+
+    raw_response = run_analysis_execution_agent(query)
+    print("🔍 Raw agent response:", raw_response)
+
+    # —— 清理可能的 markdown 代码块 ——  
+    if raw_response is None:
+        raise HTTPException(500, "Agent 请求失败，没有返回任何内容")
+
+    # 去掉开头 ```json
+    cleaned = re.sub(r"^```(?:json)?\s*", "", raw_response)
+    # 去掉结尾 ```
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+
+    # 再给 extract_json
+    data = extract_json(cleaned)
+    if data is None:
+        print("❌ extract_json 还是返回 None，说明内容仍不是合法 JSON：", cleaned)
+        raise HTTPException(
+            status_code=500,
+            detail="Enhancer agent 返回的内容无法解析为 JSON，请检查 agent 响应"
+        )
+
+
+    # （可选）再做一次类型校验，确保是 dict 或 list
+    if not isinstance(data, (dict, list)):
+        print(f"❌ Parsed JSON 类型错误: {type(data)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"解析后的 JSON 类型不是 dict 或 list，而是 {type(data)}"
+        )
+
+    # 5) 写文件并返回
+    try:
+        save_json(data, slides_data_path)
+        print(f"✅ Enhanced slides data saved to {slides_data_path}")
+    except Exception as e:
+        print(f"❌ Error saving enhanced slides data: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save enhanced slides data: {e}")
+
+    return {
+        "message": "Enhancer agent parsing completed successfully",
+        "path": str(slides_data_path)
+    }
+
 
 @app.post("/execution-agent-parsing")
 async def execution_agent_parsing(

@@ -12,7 +12,7 @@ import importlib.metadata
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=True)
 
 # Import configs
 from config import (

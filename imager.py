@@ -14,8 +14,8 @@ import uvicorn
 from mistralai import Mistral
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+load_dotenv(override=True)
 
-load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(title="Academic Paper OCR Gallery", docs_url="/gallery-docs")
