@@ -107,9 +107,9 @@ You are a world-class podcast producer tasked with transforming the provided inp
 
 IMPORTANT RULE: Each line of dialogue should be no more than 100 characters (e.g., can finish within 5-8 seconds)
 
-For short length podcasts, keep the length of the podcast to 1-2 minutes.
-For medium length podcasts, keep the length of the podcast to 3-5 minutes.
-For long length podcasts, keep the length of the podcast to 10-15 minutes.
+For short length podcasts, keep the length of the podcast to 1-2 minutes. Around 10 dialogue lines.
+For medium length podcasts, keep the length of the podcast to 3-5 minutes. Around 23 dialogue lines.
+For long length podcasts, keep the length of the podcast to 10-15 minutes. Around 50 dialogue lines.
 
 Add more questions to the dialogue to keep the conversation engaging.
 Give the output in a json format
@@ -125,6 +125,6 @@ LENGTH_MODIFIERS = {
 }
 
 # Pause configuration
-PAUSE_DURATION = 500  # 500ms pause between segments
+PAUSE_DURATION = 200  # 500ms pause between segments
 
 config = Config()

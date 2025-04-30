@@ -1027,6 +1027,7 @@ async def enhance_slides_agent(
     json_dir = Path("data/metadata")
     slides_data_path = json_dir / "updated_slides_data.json"
     slides_data = load_json(slides_data_path)
+    print(f"📊 Loaded slides_data with {len(slides_data.get('content', []))} slides")
     if not settings.ENHANCE_AGENT_ID:
             print("⚠️ EXECUTION_AGENT_ID not found, falling back to standard chat completion")
     query=f"""
@@ -1121,7 +1122,7 @@ async def execution_agent_parsing(
 
         try:
             slides_data = load_json(slides_data_path)
-            print(f"📊 Loaded slides_data with {len(slides_data.get('content', []))} slides")
+            
         except Exception as e:
             print(f"❌ Error loading slides_data.json: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to load slides_data.json: {str(e)}")
@@ -1151,7 +1152,7 @@ async def execution_agent_parsing(
 
         If the content has bullet points, then be creative in choosing layouts which contain texts and title type
 
-        ## And do not loose the content ##
+        Always add the layout name in the json chosen from the {distinct_layout}
 
         ## Do not add your own custom placeholders in the slide layout, use only the ones provided in the layout_details.json
 
@@ -1186,6 +1187,7 @@ async def execution_agent_parsing(
                 agent_result = response.choices[0].message.content
         
         print("Got the agent Response")
+        
 
         execution_agent_json = extract_json(agent_result)
         

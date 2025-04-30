@@ -10,6 +10,7 @@ import GeneratingPage from './pages/GeneratingPage';
 import SuccessPage from './pages/SuccessPage';
 import ErrorPage from './pages/ErrorPage';
 import PodcastPage from './pages/PodcastPage';
+import ChatWidgetController from './components/ChatWidgetController';
 
 function App() {
   return (
@@ -27,6 +28,9 @@ function App() {
           <Route path="/podcast" element={<PodcastPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        
+        {/* Chat widget that appears on pages after settings */}
+        <ChatWidgetController />
       </div>
     </Router>
   );

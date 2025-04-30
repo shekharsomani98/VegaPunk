@@ -114,15 +114,15 @@ const SettingsPage = () => {
               <div className="relative group mt-2">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-lg blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
                 <div className="relative">
-                  <select
-                    value={settings.studentLevel}
-                    onChange={(e) => setSettings({...settings, studentLevel: e.target.value})}
+            <select
+              value={settings.studentLevel}
+              onChange={(e) => setSettings({...settings, studentLevel: e.target.value})}
                     className="w-full p-3 border border-gray-700 rounded-xl shadow-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-900/80 text-white placeholder-gray-500 transition-all duration-200"
-                  >
-                    <option value="1">PhD Researcher</option>
-                    <option value="2">Masters Student</option>
-                    <option value="3">Undergraduate Student</option>
-                  </select>
+            >
+              <option value="1">PhD Researcher</option>
+              <option value="2">Masters Student</option>
+              <option value="3">Undergraduate Student</option>
+            </select>
                 </div>
               </div>
               <p className="mt-2 text-xs text-gray-400 flex items-center pl-1">
@@ -245,9 +245,9 @@ const SettingsPage = () => {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-                {['short', 'informative', 'detailed', 'custom'].map((option) => (
-                  <label 
-                    key={option}
+              {['short', 'informative', 'detailed', 'custom'].map((option) => (
+                <label 
+                  key={option}
                     className={`flex items-start p-2 sm:p-3 border rounded-xl cursor-pointer transition-all duration-300
                       ${settings.length === option 
                         ? 'border-indigo-500/50 bg-gradient-to-r from-indigo-900/40 to-blue-900/40 shadow-lg shadow-indigo-500/10' 
@@ -258,43 +258,43 @@ const SettingsPage = () => {
                         <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse-slow"></div>
                       )}
                     </div>
-                    <input
-                      type="radio"
-                      name="length"
-                      value={option}
-                      checked={settings.length === option}
-                      onChange={(e) => setSettings({...settings, length: e.target.value})}
+                  <input
+                    type="radio"
+                    name="length"
+                    value={option}
+                    checked={settings.length === option}
+                    onChange={(e) => setSettings({...settings, length: e.target.value})}
                       className="sr-only"
-                    />
-                    <div className="flex-grow">
+                  />
+                  <div className="flex-grow">
                       <div className="flex justify-between items-center">
                         <span className="capitalize font-medium text-sm text-gray-200">{option}</span>
-                        {option !== 'custom' && settings.length === option && settings.randomSlideCount && (
+                      {option !== 'custom' && settings.length === option && settings.randomSlideCount && (
                           <span className="text-xs font-medium px-1.5 py-0.5 bg-indigo-900/60 text-indigo-200 rounded-full border border-indigo-700/30 shadow-inner ml-1">
                             {settings.randomSlideCount}
                           </span>
-                        )}
-                      </div>
+                      )}
+                    </div>
                       {option === 'short' && <p className="text-xs text-gray-400 mt-1">3-8 slides</p>}
                       {option === 'informative' && <p className="text-xs text-gray-400 mt-1">8-12 slides</p>}
                       {option === 'detailed' && <p className="text-xs text-gray-400 mt-1">12-18 slides</p>}
-                      {option === 'custom' && (
+                    {option === 'custom' && (
                         <div className="mt-1 flex items-center">
-                          <input
-                            type="number"
-                            value={settings.customSlides}
-                            onChange={(e) => setSettings({...settings, customSlides: parseInt(e.target.value)})}
+                      <input
+                        type="number"
+                        value={settings.customSlides}
+                        onChange={(e) => setSettings({...settings, customSlides: parseInt(e.target.value)})}
                             className="p-1 border border-gray-600 rounded-md w-12 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-800 text-white text-center text-xs"
-                            min="1"
-                            max="30"
-                          />
+                        min="1"
+                        max="30"
+                      />
                           <span className="ml-1 text-xs text-gray-400">slides</span>
                         </div>
-                      )}
-                    </div>
-                  </label>
-                ))}
-              </div>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
             </div>
           </div>
 

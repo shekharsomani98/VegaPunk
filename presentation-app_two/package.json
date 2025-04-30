@@ -2,6 +2,7 @@
   "name": "presentation-app",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:8003",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@testing-library/dom": "^10.4.0",
