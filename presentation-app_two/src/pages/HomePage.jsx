@@ -63,7 +63,7 @@ const HomePage = () => {
                   <div className="bg-indigo-900 rounded-full p-2 mr-4 mt-1">
                     <svg className="w-5 h-5 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
+            </svg>
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-gray-100 mb-1">Create a Podcast</h3>
@@ -72,15 +72,15 @@ const HomePage = () => {
                 </div>
               </div>
               
-              <button 
-                onClick={() => navigate('/upload')}
+            <button
+      onClick={() => navigate('/upload')}
                 className="mt-8 w-full py-4 bg-gradient-to-r from-indigo-700 to-blue-600 hover:from-indigo-800 hover:to-blue-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center text-lg font-medium"
-              >
+    >
                 Start Creating
                 <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
-              </button>
+    </button>
             </div>
           </div>
           

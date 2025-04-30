@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from mistralai import Mistral
 import json
 import re
@@ -69,6 +70,10 @@ os.makedirs("data/formulas", exist_ok=True)
 os.makedirs("data/metadata", exist_ok=True)
 os.makedirs("data/output", exist_ok=True)
 os.makedirs("podcast", exist_ok=True)
+os.makedirs("images", exist_ok=True)
+
+# Mount the images directory
+app.mount("/images", StaticFiles(directory="images"), name="images")
 
 # Define models
 class AnalysisResponse(BaseModel):
@@ -87,6 +92,15 @@ class Slides(BaseModel):
 
 class Ppt(BaseModel):
     content: List[Slides]
+
+
+class Slide(BaseModel):
+    slide_name: str
+    placeholders: Dict[str, str]
+
+class PresentationData(BaseModel):
+    slides: List[Slide]
+
 
 # Cache for analysis results
 analysis_cache = {}
@@ -144,59 +158,105 @@ def parse_prerequisites(text: str) -> dict:
             ]
     return prerequisites
 
-# Function to render LaTeX formulas as images
-def render_latex_to_image(formula, name="latex"):
-    """Render LaTeX formula to image using matplotlib"""
-    # Check cache first
-    cache_key = f"{formula}_{name}"
-    if cache_key in formula_cache:
-        return formula_cache[cache_key]
-    
+def render_latex_to_image(formula: str, name: str="latex", dpi: int=200) -> str:
+    """
+    Generate high-quality formula PNG using LaTeX + dvipng.
+
+    Args:
+    - formula: Raw LaTeX math content, without enclosing $...$.
+    - name: Identifier for the file name; the output will be saved as data/formulas/{name}.png
+    - dpi: Resolution (dots per inch) for the output PNG.
+
+    Returns:
+    - Path to the generated PNG file.
+    """
+    out_dir = Path("data/formulas")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    output_path = out_dir / f"{name.replace(' ', '_')}.png"
+
+    # Sympy.preview will:
+    #   1) Write a minimal standalone LaTeX document in a temporary directory
+    #   2) Compile it to DVI/PDF using pdflatex
+    #   3) Use dvipng to convert the output into a PNG image
+
     try:
-        start_time = time.time()
-        fig, ax = plt.subplots()
+        preview(
+            f"${formula}$",
+            output='png',
+            viewer='file',
+            filename=str(output_path),
+            dvioptions=[f"-D{dpi}", "-Ttight"]
+        )
+        return str(output_path)
+    except Exception as e:
+        print(f"❌ render_latex_to_image failed，back to Matplotlib: {e}")
+
+    # Matplotlib + usetex
+    try:
+        plt.rcParams.update({"text.usetex": True})
+        fig = plt.figure(figsize=(0.01, 0.01))
         fig.patch.set_visible(False)
-        image_path = Path("data/formulas") / f"{name.replace(' ', '_')}.png"
-        ax.axis('off')
-        ax.text(0.5, 0.5, f"${formula}$", fontsize=30, ha='center', va='center')
-        image_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(image_path, bbox_inches='tight', transparent=True, dpi=150)
-        plt.close()
+        fig.text(0.5, 0.5, f"${formula}$", ha='center', va='center', fontsize=20)
+        plt.savefig(output_path, dpi=dpi, bbox_inches='tight', pad_inches=0.1, transparent=True)
+        plt.close(fig)
+        return str(output_path)
+    except Exception as e2:
+        print(f"⚠️ Matplotlib also failed：{e2}")
+        return ""
+
+# # Function to render LaTeX formulas as images
+# def render_latex_to_image(formula, name="latex"):
+#     """Render LaTeX formula to image using matplotlib"""
+#     # Check cache first
+#     cache_key = f"{formula}_{name}"
+#     if cache_key in formula_cache:
+#         return formula_cache[cache_key]
+    
+#     try:
+#         start_time = time.time()
+#         fig, ax = plt.subplots()
+#         fig.patch.set_visible(False)
+#         image_path = Path("data/formulas") / f"{name.replace(' ', '_')}.png"
+#         ax.axis('off')
+#         ax.text(0.5, 0.5, f"${formula}$", fontsize=30, ha='center', va='center')
+#         image_path.parent.mkdir(parents=True, exist_ok=True)
+#         plt.savefig(image_path, bbox_inches='tight', transparent=True, dpi=150)
+#         plt.close()
         
-        render_time = time.time() - start_time
-        print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s with $ escape")
+#         render_time = time.time() - start_time
+#         print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s with $ escape")
         
-        # Cache the result
-        formula_cache[cache_key] = str(image_path)
-        return str(image_path)
+#         # Cache the result
+#         formula_cache[cache_key] = str(image_path)
+#         return str(image_path)
         
-    except:
-        try:
-            start_time = time.time()
-            fig, ax = plt.subplots()
-            fig.patch.set_visible(False)
-            image_path = Path("data/formulas") / f"{name.replace(' ', '_')}.png"
-            ax.axis('off')
-            ax.text(0.5, 0.5, f"{formula}", fontsize=30, ha='center', va='center')
-            image_path.parent.mkdir(parents=True, exist_ok=True)
-            plt.savefig(image_path, bbox_inches='tight', transparent=True, dpi=150)
-            plt.close()
+#     except:
+#         try:
+#             start_time = time.time()
+#             fig, ax = plt.subplots()
+#             fig.patch.set_visible(False)
+#             image_path = Path("data/formulas") / f"{name.replace(' ', '_')}.png"
+#             ax.axis('off')
+#             ax.text(0.5, 0.5, f"{formula}", fontsize=30, ha='center', va='center')
+#             image_path.parent.mkdir(parents=True, exist_ok=True)
+#             plt.savefig(image_path, bbox_inches='tight', transparent=True, dpi=150)
+#             plt.close()
             
-            render_time = time.time() - start_time
-            print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s")
+#             render_time = time.time() - start_time
+#             print(f"⚡ Formula '{name}' rendered in {render_time:.2f}s")
             
-            # Cache the result
-            formula_cache[cache_key] = str(image_path)
-            return str(image_path)
-        except Exception as e:
-            print(f"❌ Error rendering formula '{name}': {str(e)}")
-            return ""
+#             # Cache the result
+#             formula_cache[cache_key] = str(image_path)
+#             return str(image_path)
+#         except Exception as e:
+#             print(f"❌ Error rendering formula '{name}': {str(e)}")
+#             return ""
 
 # Directory cleaning function
 def clean_directories(directories=None):
     """
     Clean specified directories by removing all files within them.
-    If directories is None, clean all data directories except upload.
+    If directories is None, clean all data directories except upload and images.
     """
     if directories is None:
         directories = [
@@ -208,6 +268,9 @@ def clean_directories(directories=None):
     
     start_time = time.time()
     print(f"🧹 Cleaning directories: {directories}")
+    
+    # Ensure images directory is not accidentally cleaned
+    directories = [dir for dir in directories if dir != "images"]
     
     for directory in directories:
         dir_path = Path(directory)
@@ -1056,7 +1119,8 @@ For slides with formulas, explain them in technical terms rather than giving exa
                         "role": "user",
                         "content":  query
                     },
-                ]
+                ],
+                # response_format=Ppt
             )
             result = response.choices[0].message.content
             return result
@@ -1166,7 +1230,8 @@ async def execution_agent_parsing(
             # Fallback to standard chat completion
             response = client.chat.complete(
                 model=settings.MODEL_NAME,
-                messages=[{"role": "user", "content": query}]
+                messages=[{"role": "user", "content": query}],
+                # response_format=PresentationData
             )
             agent_result = response.choices[0].message.content
         else:
@@ -1174,7 +1239,8 @@ async def execution_agent_parsing(
                 print(f"🤖 Using execution agent ID: {settings.EXECUTION_AGENT_ID}")
                 response = client.agents.complete(
                     agent_id=settings.EXECUTION_AGENT_ID,
-                    messages=[{"role": "user", "content": query}]
+                    messages=[{"role": "user", "content": query}],
+                    # response_format=PresentationData
                 )
                 agent_result = response.choices[0].message.content
             except Exception as agent_error:
@@ -1182,7 +1248,8 @@ async def execution_agent_parsing(
                 # Fallback to standard chat completion
                 response = client.chat.complete(
                     model=settings.MODEL_NAME,
-                    messages=[{"role": "user", "content": query}]
+                    messages=[{"role": "user", "content": query}],
+                    # response_format=PresentationData
                 )
                 agent_result = response.choices[0].message.content
         
@@ -1690,7 +1757,14 @@ async def get_podcast_file(filename: str):
     podcast_path = Path("podcast") / filename
     if not podcast_path.exists():
         raise HTTPException(status_code=404, detail=f"Podcast file '{filename}' not found")
-    return FileResponse(podcast_path, media_type="audio/mpeg", filename=filename)
+    
+    print(f"Serving podcast file: {podcast_path}")
+    # Explicitly set media_type to audio/mpeg to ensure proper handling by browsers
+    return FileResponse(
+        path=str(podcast_path),
+        media_type="audio/mpeg",
+        filename=filename
+    )
 
 # Main application entry point
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ import SuccessPage from './pages/SuccessPage';
 import ErrorPage from './pages/ErrorPage';
 import PodcastPage from './pages/PodcastPage';
 import ChatWidgetController from './components/ChatWidgetController';
+import ImageWidgetController from './components/ImageWidgetController';
 
 function App() {
   return (
@@ -31,6 +32,9 @@ function App() {
         
         {/* Chat widget that appears on pages after settings */}
         <ChatWidgetController />
+        
+        {/* Image generator widget - only appears on pages after template selection */}
+        <ImageWidgetController />
       </div>
     </Router>
   );
