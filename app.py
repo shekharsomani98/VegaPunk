@@ -92,8 +92,9 @@ class Slides(BaseModel):
 class Ppt(BaseModel):
     content: List[Slides]
 
+# here I add the class SlideData(BaseModel)
 class SlideData(BaseModel):
-    content: List[Slides]   # 这里复用你已经定义好的 Slides 模型
+    content: List[Slides]   
 
 
 # Cache for analysis results
@@ -152,29 +153,29 @@ def parse_prerequisites(text: str) -> dict:
             ]
     return prerequisites
 
-# Function to render LaTeX formulas as images
+# Function to render LaTeX formulas as images(I also changed to use Sympy.preview)
 
 def render_latex_to_image(formula: str, name: str="latex", dpi: int=200) -> str:
     """
-    用 LaTeX + dvipng 生成高质量公式 PNG。
+    Generate high-quality formula PNG using LaTeX + dvipng.
 
-    参数:
-      - formula: 纯公式内容，不要包含外围的 $…$。  
-      - name: 用于文件名的标识，会生成 data/formulas/{name}.png  
-      - dpi: 输出 PNG 的分辨率。
+    Args:
+    - formula: Raw LaTeX math content, without enclosing $...$.
+    - name: Identifier for the file name; the output will be saved as data/formulas/{name}.png
+    - dpi: Resolution (dots per inch) for the output PNG.
 
-    返回:
-      - 生成的 PNG 路径
+    Returns:
+    - Path to the generated PNG file.
     """
-    # 保证输出目录存在
     out_dir = Path("data/formulas")
     out_dir.mkdir(parents=True, exist_ok=True)
     output_path = out_dir / f"{name.replace(' ', '_')}.png"
 
-    # Sympy.preview 会：
-    #   1) 在临时目录里写一个最简单的 standalone LaTeX 文档
-    #   2) pdflatex 编译成 DVI/PDF
-    #   3) 调用 dvipng 生成 PNG
+    # Sympy.preview will:
+    #   1) Write a minimal standalone LaTeX document in a temporary directory
+    #   2) Compile it to DVI/PDF using pdflatex
+    #   3) Use dvipng to convert the output into a PNG image
+
     try:
         preview(
             f"${formula}$",
@@ -185,9 +186,9 @@ def render_latex_to_image(formula: str, name: str="latex", dpi: int=200) -> str:
         )
         return str(output_path)
     except Exception as e:
-        print(f"❌ render_latex_to_image 失败，回退到 Matplotlib: {e}")
+        print(f"❌ render_latex_to_image failed，back to Matplotlib: {e}")
 
-    # 回退方案：Matplotlib + usetex
+    # Matplotlib + usetex
     try:
         plt.rcParams.update({"text.usetex": True})
         fig = plt.figure(figsize=(0.01, 0.01))
@@ -197,7 +198,7 @@ def render_latex_to_image(formula: str, name: str="latex", dpi: int=200) -> str:
         plt.close(fig)
         return str(output_path)
     except Exception as e2:
-        print(f"⚠️ Matplotlib 回退也失败：{e2}")
+        print(f"⚠️ Matplotlib also failed：{e2}")
         return ""
 
 
@@ -1042,7 +1043,7 @@ async def process_slides_data():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
-
+# this part I also changed(Huang Zihao)
 @app.post("/enhace-slides-agent")
 async def enhance_slides_agent(
     settings: Settings = Depends(get_settings)
@@ -1054,7 +1055,6 @@ async def enhance_slides_agent(
     json_dir = Path("data/metadata")
     slides_data_path = json_dir / "updated_slides_data.json"
 
-    # 1) 加载已存在的 slides data
     try:
         slides_data = load_json(slides_data_path)
         print("✅ Loaded slides_data:", slides_data_path, f"(contains {len(slides_data.get('content', []))} slides)")
@@ -1062,7 +1062,6 @@ async def enhance_slides_agent(
         print(f"❌ Error loading {slides_data_path}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to load existing slides data: {e}")
 
-    # 2) 构造 agent 查询
     if not execution_agent_id:
         print("⚠️ ENHANCE_AGENT_ID not found, falling back to standard chat completion")
 
@@ -1077,7 +1076,6 @@ For slides with formulas, explain them in technical terms rather than giving usa
 IMPORTANT: Output must be pure JSON—no backticks, no extra text, no explanations.
 """
 
-    # 3) 调用 agent
     def run_analysis_execution_agent(q: str) -> str:
         try:
             if execution_agent_id:
@@ -1098,35 +1096,29 @@ IMPORTANT: Output must be pure JSON—no backticks, no extra text, no explanatio
 
     raw_response = run_analysis_execution_agent(query)
     print("🔍 Raw agent response:", raw_response)
-
-    # —— 清理可能的 markdown 代码块 ——  
+ 
     if raw_response is None:
-        raise HTTPException(500, "Agent 请求失败，没有返回任何内容")
+        raise HTTPException(500, "Agent failed, return null")
 
-    # 去掉开头 ```json
     cleaned = re.sub(r"^```(?:json)?\s*", "", raw_response)
-    # 去掉结尾 ```
     cleaned = re.sub(r"\s*```$", "", cleaned)
 
-    # 再给 extract_json
     data = extract_json(cleaned)
     if data is None:
-        print("❌ extract_json 还是返回 None，说明内容仍不是合法 JSON：", cleaned)
+        print("❌ extract_json still return None, so still not valid JSON", cleaned)
         raise HTTPException(
             status_code=500,
-            detail="Enhancer agent 返回的内容无法解析为 JSON，请检查 agent 响应"
+            detail="Enhancer agent returned content could not parse to JSON, pls check agent response"
         )
 
 
-    # （可选）再做一次类型校验，确保是 dict 或 list
     if not isinstance(data, (dict, list)):
-        print(f"❌ Parsed JSON 类型错误: {type(data)}")
+        print(f"❌ Parsed JSON type failed: {type(data)}")
         raise HTTPException(
             status_code=500,
-            detail=f"解析后的 JSON 类型不是 dict 或 list，而是 {type(data)}"
+            detail=f"parsed JSON is not dict or list, is {type(data)}"
         )
 
-    # 5) 写文件并返回
     try:
         save_json(data, slides_data_path)
         print(f"✅ Enhanced slides data saved to {slides_data_path}")
