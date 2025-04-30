@@ -12,7 +12,7 @@ import importlib.metadata
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv(override=True)
+load_dotenv()
 
 # Import configs
 from config import (
@@ -287,4 +287,4 @@ async def upload_document(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("podcast_api:app", host="0.0.0.0", port=8002, reload=True) 
+    uvicorn.run("podcast_api:app", host="0.0.0.0", port=8000, reload=True) 

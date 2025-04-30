@@ -6,7 +6,7 @@ import json
 import re
 import os
 import hashlib
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from pydantic_settings import BaseSettings
 from functools import lru_cache
@@ -33,11 +33,9 @@ import random
 from pydub import AudioSegment
 from melo.api import TTS
 import json
-import tempfile, subprocess
 from podcast_api import generate_podcast
 from dotenv import load_dotenv
 load_dotenv(override=True)
-
 
 # Configuration settings
 class Settings(BaseSettings):
@@ -92,10 +90,20 @@ class Slides(BaseModel):
 class Ppt(BaseModel):
     content: List[Slides]
 
-# here I add the class SlideData(BaseModel)
+# # here I add the class SlideData(BaseModel)
 class SlideData(BaseModel):
-    content: List[Slides]   
+    content: List[Slides]  
 
+class Slide(BaseModel):
+    slide_name: str
+    placeholders: Dict[str, str]
+
+# class Placeholder(BaseModel):
+#     # This model represents the placeholder dictionary, with dynamic keys and string values
+#     __root__: Dict[str, str]
+
+class PresentationData(BaseModel):
+    slides: List[Slide]
 
 # Cache for analysis results
 analysis_cache = {}
@@ -936,15 +944,7 @@ Give the output in a json format and a dictionary tagging formuala and its name 
         
         input_slides_path = Path(config.TEMPLATE_METADATA_DIR) / "slides_data.json"
         try:
-            if isinstance(slides, BaseModel):
-                slides_to_save = slides.dict()    # Pydantic 模型
-            elif isinstance(slides, str):
-                slides_to_save = json.loads(slides)  # 如果它真的是个 JSON 字符串
-            else:
-                slides_to_save = slides             # 本身就是个 dict/list
-
-            # 再存到文件
-            save_json(slides_to_save, input_slides_path)
+            save_json(slides, input_slides_path)
             print(f"✅ Saved slides data to {input_slides_path}")
         except Exception as e:
             print(f"❌ Error saving slides data: {e}")
@@ -1183,7 +1183,7 @@ async def execution_agent_parsing(
 
         try:
             slides_data = load_json(slides_data_path)
-            print(f"📊 Loaded slides_data with {len(slides_data.get('content', []))} slides")
+            
         except Exception as e:
             print(f"❌ Error loading slides_data.json: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to load slides_data.json: {str(e)}")
@@ -1213,7 +1213,7 @@ async def execution_agent_parsing(
 
         If the content has bullet points, then be creative in choosing layouts which contain texts and title type
 
-        ## And do not loose the content ##
+        Always add the layout name in the json chosen from the {distinct_layout}
 
         ## Do not add your own custom placeholders in the slide layout, use only the ones provided in the layout_details.json
 
@@ -1227,7 +1227,8 @@ async def execution_agent_parsing(
             # Fallback to standard chat completion
             response = client.chat.complete(
                 model=settings.MODEL_NAME,
-                messages=[{"role": "user", "content": query}]
+                messages=[{"role": "user", "content": query}],
+                response_format=PresentationData
             )
             agent_result = response.choices[0].message.content
         else:
@@ -1248,6 +1249,7 @@ async def execution_agent_parsing(
                 agent_result = response.choices[0].message.content
         
         print("Got the agent Response")
+        
 
         execution_agent_json = extract_json(agent_result)
         

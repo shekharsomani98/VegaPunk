@@ -2,6 +2,7 @@
   "name": "presentation-app",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:8003",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@testing-library/dom": "^10.4.0",
@@ -9,7 +10,6 @@
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.4",
-    "http-proxy-middleware": "^3.0.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.3.8",

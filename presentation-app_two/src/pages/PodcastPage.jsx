@@ -447,7 +447,7 @@ const PodcastPage = () => {
               </div>
                 <div className="ml-4">
                   <p className="text-red-400">{error}</p>
-                </div>
+              </div>
             </div>
           </div>
         )}

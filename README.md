@@ -1,93 +1,132 @@
-# Podcast Generator API
+# 🎓 VegaPunk: From Research Paper to Presentation with a Few Clicks
 
-A FastAPI-based backend for generating engaging podcasts from documents and web pages.
+**VegaPunk** is an intelligent tool that helps you convert your **PDF or research paper URL** into a well-structured **PowerPoint presentation** effortlessly.
 
-## Features
+With just a few clicks, users can:
+- Select content type and slide length according to their needs
+- Listen to an **auto-generated podcast** summarizing the paper
+- Extract **tables, charts, and formulas**
+- Use a **live chatbot** tailored to the specific paper for interactive Q&A
+- Leverage AI **agents** to generate reliable, well-designed presentations with minimal effort
 
-- Convert documents/web pages into engaging podcast-style conversations
-- Customizable host and guest voices
-- Automatic transcript generation
-- Download generated podcasts in MP3 format
+---
 
-## Installation
+## 🛠️ Installation Steps
 
-1. Clone the repository
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Set up your environment variables:
-   ```
-   cp .env.example .env
-   ```
-   Then edit the `.env` file and add your Mistral API key.
-
-## Configuration
-
-All configurations are stored in two places:
-
-1. `.env` file - Contains API keys and server settings
-2. `config.py` - Contains TTS settings, file paths, and prompt templates
-
-## Usage
-
-### Start the API server
-
-```
-python podcast_api.py
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Rishbah-76/VegaPunk
+cd VegaPunk
 ```
 
-or
-
-```
-uvicorn podcast_api:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### Test the API
-
-You can test the API using the included test script:
-
-```
-python test_podcast_api.py
+### 2. Setup Frontend (Presentation App)
+```bash
+cd presentation_app_two
+npm install
+npm start
 ```
 
-### API Endpoints
+---
 
-1. **Generate Podcast** - `POST /generate-podcast/`
-   ```bash
-   curl -X POST "http://localhost:8000/generate-podcast/" \
-     -H "Content-Type: application/json" \
-     -d '{"document_url": "https://arxiv.org/pdf/2402.18679", "prompt_modifiers": {"tone": "fun and engaging", "length": "Medium (3-5 min)"}}'
-   ```
+## 🧠 Setup Python Backend (Two Separate Conda Environments)
 
-2. **Download Podcast** - `GET /podcast/{filename}`
-   ```bash
-   curl -X GET "http://localhost:8000/podcast/podcast.mp3" --output podcast.mp3
-   ```
+> Make sure you're back in the **VegaPunk root directory** before proceeding.
+```bash
+cd ..
+```
+---
 
-3. **Upload Document** - `POST /upload-document/`
-   ```bash
-   curl -X POST "http://localhost:8000/upload-document/" \
-     -F "file=@your_document.pdf"
-   ```
+### 🔹 A. Base Environment (for `app` and `podcast`)
+```bash
+conda env create -f environment_base.yaml -n papergen
+# If this fails, try the manual steps below
+```
 
-## API Documentation
+<details>
+<summary>🔧 Manual Setup If Above Fails</summary>
 
-Interactive API documentation is available at:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+```bash
+# Step 1: Create and activate environment
+conda create -n papergen python=3.9
+conda activate papergen
 
-## Customization
+# Step 2: Setup MeloTTS
+git clone https://github.com/myshell-ai/MeloTTS.git
+cd MeloTTS
+pip install -e .
+python -m unidic download
+cd ..
 
-You can customize the podcast generation by modifying:
+# Step 3: Install Python dependencies
+pip install -r melotts_requirements.txt
 
-1. **Prompt Modifiers** in API requests:
-   - `tone`: Sets the tone of the podcast (e.g., "fun", "serious", "conversational")
-   - `length`: Sets the podcast length, choose from "Short (1-2 min)", "Medium (3-5 min)", or "Long (10-15 min)"
-   - `language`: Sets the output language
-   - `question`: Adds a specific question to be answered in the podcast
+> 💡 If you run into system issues, try:
+- brew install ... (macOS)
+- apt-get install ... (Ubuntu)
+- .exe installer or pip install ... (Windows)
 
-2. **Configuration Files**:
-   - Change speaker voices by updating the `TTS_CONFIG` settings in `config.py`
-   - Modify prompt templates in `PODCAST_SYSTEM_PROMPT`
-   - Adjust output file paths in the `PATHS` dictionary
+```
+</details>
+
+---
+
+### 🔸 B. Advanced Environment (for `chat_bot` and `imager`)
+```bash
+conda env create -f environment_advance.yaml -n papergen_adv
+```
+
+---
+
+## 🔑 API Key & Environment Variables
+
+Create a `.env` file in the root directory based on `.env.example`:
+
+```
+MISTRAL_API_KEY=your_own_api_key_here
+MODEL_NAME=mistral-small-latest
+EXECUTION_AGENT_ID=ag:b3a9e6f1:20250329:execution-agent:8bfa62a0
+MODEL_NAME_OCR=mistral-ocr-latest
+ENHANCE_AGENT_ID=ag:b3a9e6f1:20250403:untitled-agent:e4afc82a
+
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+```
+
+> 🔐 Make sure to use your own valid `MISTRAL_API_KEY`.
+
+---
+
+## 🚀 Running the Full System (In Separate Terminals)
+
+Run each of the following in its **own terminal window**:
+
+### ➤ Base Environment (`papergen`)
+```bash
+# Terminal 1: Main API
+conda activate papergen
+uvicorn app:app --port 8000 --reload
+
+# Terminal 2: Podcast Generator
+conda activate papergen
+uvicorn podcast_api:app --port 8002 --reload
+```
+
+### ➤ Advanced Environment (`papergen_adv`)
+```bash
+# Terminal 3: Image & Table Extractor
+conda activate papergen_adv
+uvicorn imager:app --port 8001 --reload
+
+# Terminal 4: Chatbot for Q&A Interaction
+conda activate papergen_adv
+uvicorn chat_bot:app --port 8003 --reload
+```
+
+---
+
+## 🔄 Upcoming Features
+
+- ⚡ **Faster PPT generation**
+- 🧠 **RL + Agent-based layout optimization**
+- 🌍 **Multilingual podcast voices with natural tone**
+- 📊 **Smart table & image embedding into slides**
