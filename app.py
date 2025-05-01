@@ -1129,10 +1129,41 @@ For slides with formulas, explain them in technical terms rather than giving exa
             return None
         
     
-    enhance_agent=run_analysis_execution_agent(query)
-    data = extract_json(enhance_agent)
-    save_json(data, slides_data_path)
-    print(f"✅ Enhancer agent parsing completed")
+    enhance_agent = run_analysis_execution_agent(query)
+    
+    # Add validation to prevent saving null data
+    try:
+        data = extract_json(enhance_agent)
+        
+        # Validate the data is not null/empty and has expected structure
+        if data is None:
+            print("⚠️ Warning: Agent returned null data. Not updating slides.")
+            return {"message": "Agent returned null data. Original slides kept unchanged."}
+            
+        # Check if data has expected structure (content array)
+        if not isinstance(data, dict) or 'content' not in data or not isinstance(data['content'], list) or len(data['content']) == 0:
+            print("⚠️ Warning: Agent returned invalid data format. Not updating slides.")
+            print(f"Data structure received: {type(data)}")
+            return {"message": "Agent returned invalid data format. Original slides kept unchanged."}
+            
+        # Verify content has some expected fields
+        sample_slide = data['content'][0]
+        required_fields = ['title', 'subtitle']
+        missing_fields = [field for field in required_fields if field not in sample_slide]
+        
+        if missing_fields:
+            print(f"⚠️ Warning: Agent output is missing required fields: {missing_fields}. Not updating slides.")
+            return {"message": f"Agent output is missing required fields: {missing_fields}. Original slides kept unchanged."}
+        
+        # If we got here, data seems valid, so save it
+        print(f"✅ Agent returned valid data with {len(data['content'])} slides. Saving to {slides_data_path}")
+        save_json(data, slides_data_path)
+        print(f"✅ Enhancer agent parsing completed successfully")
+        return {"message": "Slides data enhanced and saved successfully"}
+    except Exception as e:
+        print(f"❌ Error processing agent output: {str(e)}")
+        traceback.print_exc()
+        return {"message": f"Error enhancing slides: {str(e)}. Original slides kept unchanged."}
     """Enhance slides data using execution agent"""
 
 @app.post("/execution-agent-parsing")
@@ -1217,6 +1248,8 @@ async def execution_agent_parsing(
         If the content has bullet points, then be creative in choosing layouts which contain texts and title type
 
         Always add the layout name in the json chosen from the {distinct_layout}
+
+        Add \ n in the placeholders to create new lines
 
         ## Do not add your own custom placeholders in the slide layout, use only the ones provided in the layout_details.json
 

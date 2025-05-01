@@ -165,7 +165,7 @@ def process_ocr_response(ocr_response, output_dir=OUTPUT_DIR):
 async def generate_html(json_data):
     """Generate HTML gallery from JSON data using Mistral API"""
     client = get_mistral_client()
-    model = "mistral-large-latest"
+    model = "mistral-small-latest"
     
     prompt = f"""
     Take this json data of tables and Images and generate me a html code to display every relevant image with caption and tables in a well-formatted way.

@@ -14,7 +14,16 @@ const TemplatePage = () => {
     { id: 'aura', name: 'Aura', previewSrc: '/templates/aura-preview.png' },
     { id: 'basic', name: 'Basic', previewSrc: '/templates/basic-preview.png' },
     { id: 'modern', name: 'Modern', previewSrc: '/templates/modern-preview.png' },
-    { id: 'citation', name: 'Citation', previewSrc: '/templates/citation-preview.png' }
+    { id: 'citation', name: 'Citation', previewSrc: '/templates/citation-preview.png' },
+    // Additional templates from data/upload
+    { id: '2', name: 'Template 2', previewSrc: '/templates/2.png' },
+    { id: '3', name: 'Template 3', previewSrc: '/templates/3.png' },
+    { id: '4', name: 'Template 4', previewSrc: '/templates/4.png' },
+    { id: '6', name: 'Template 6', previewSrc: '/templates/6.png' },
+    { id: '7', name: 'Template 7', previewSrc: '/templates/7.png' },
+    { id: '8', name: 'Template 8', previewSrc: '/templates/8.png' },
+    { id: '10', name: 'Template 10', previewSrc: '/templates/10.png' },
+    { id: '11', name: 'Template 11', previewSrc: '/templates/11.png' }
   ];
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -74,13 +83,13 @@ const TemplatePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 to-blue-950 p-8 text-white">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300">Choose Template</h1>
         
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="bg-gradient-to-b from-gray-900 to-gray-950 p-6 rounded-lg shadow-lg border border-gray-800">
             <h2 className="text-lg font-medium mb-4 text-gray-200">Presentation Template</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {templates.map((template) => (
                 <label 
                   key={template.id}
